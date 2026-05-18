@@ -34,8 +34,10 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 EMAIL_TO = os.getenv("EMAIL_TO")
-
 resend.api_key = RESEND_API_KEY
+
+IFTTT_KEY = os.getenv("IFTTT_KEY")
+IFTTT_EVENT = "school_loria_update"
 
 SCHOOL_NAME = "I.C.S Moisè Loria"
 
@@ -358,7 +360,6 @@ def extract_comune_milano_state():
     for tag in soup(["script", "style", "noscript", "svg", "iframe"]):
         tag.decompose()
 
-    # Prova a limitare al contenuto principale se presente.
     main = (
         soup.find("main")
         or soup.find(attrs={"role": "main"})
@@ -369,7 +370,6 @@ def extract_comune_milano_state():
 
     text = normalize(main.get_text(" ", strip=True))
 
-    # Riduce falsi positivi su cookie/banner/menu standard.
     noise_tokens = [
         "cookie",
         "privacy",
@@ -711,6 +711,72 @@ def send_telegram_text(text, buttons=None):
 
 
 # =========================
+# WHATSAPP VIA IFTTT - CANALE OPZIONALE
+# =========================
+
+def send_ifttt_whatsapp(title, message, url):
+    """
+    Canale opzionale/best effort.
+    Se IFTTT non è configurato, la trial è scaduta, la key è invalida
+    o l'applet non risponde, il monitor NON deve fallire.
+    """
+
+    if not IFTTT_KEY:
+        print("IFTTT_KEY mancante: salto invio WhatsApp.")
+        return
+
+    payload = {
+        "value1": title[:250],
+        "value2": message[:700],
+        "value3": url,
+    }
+
+    endpoint = f"https://maker.ifttt.com/trigger/{IFTTT_EVENT}/with/key/{IFTTT_KEY}"
+
+    print("Invio WhatsApp via IFTTT...")
+
+    try:
+        response = requests.post(endpoint, json=payload, timeout=20)
+        print("IFTTT status:", response.status_code)
+        print("IFTTT response:", response.text)
+
+        if response.status_code >= 400:
+            print("Errore IFTTT: WhatsApp non inviato, ma il monitor continua.")
+            return
+
+        print("WhatsApp IFTTT inviato correttamente.")
+
+    except Exception as e:
+        print("Errore invio IFTTT WhatsApp:", repr(e))
+        print("WhatsApp saltato, ma il monitor continua.")
+        return
+
+
+def build_whatsapp_message(has_circular, circular, new_news, has_comune_update):
+    parts = []
+
+    if has_circular:
+        parts.append(
+            f"📄 Nuova circolare:\n{circular.get('title', '')}"
+        )
+
+    if new_news:
+        parts.append(
+            f"📰 {len(new_news)} nuova/e news scuola rilevate"
+        )
+
+    if has_comune_update:
+        parts.append(
+            "🏛️ Aggiornamento pagina Comune Milano - Pre-scuola e giochi serali"
+        )
+
+    if not parts:
+        parts.append("Monitor aggiornato.")
+
+    return "\n\n".join(parts)
+
+
+# =========================
 # EMAIL RESEND
 # =========================
 
@@ -841,7 +907,7 @@ def build_email_html(has_circular, circular, new_news, has_comune_update, comune
             </div>
 
             <p style="margin:28px 0 0;color:#718096;font-size:12px;text-align:center;">
-              Generato automaticamente da GitHub Actions · Telegram Bot · Resend
+              Generato automaticamente da GitHub Actions · Telegram Bot · Resend · IFTTT opzionale
             </p>
           </div>
 
@@ -914,6 +980,7 @@ def main():
     print("TELEGRAM_CHAT_ID presente:", bool(TELEGRAM_CHAT_ID))
     print("RESEND_API_KEY presente:", bool(RESEND_API_KEY))
     print("EMAIL_TO presente:", bool(EMAIL_TO))
+    print("IFTTT_KEY presente:", bool(IFTTT_KEY))
     print("RESEND_FROM:", RESEND_FROM)
     print("LOGO_FILE:", LOGO_FILE)
     print("LOGO_FILE exists:", os.path.exists(LOGO_FILE))
@@ -949,11 +1016,9 @@ def main():
     new_news = [n for n in news if n["id"] not in prev_news_ids]
 
     has_comune_update = False
-    is_first_comune_baseline = False
 
     if comune_state:
         if not prev_comune.get("id"):
-            is_first_comune_baseline = True
             print("Prima baseline Comune Milano: salvo stato senza inviare alert.")
         elif comune_state["id"] != prev_comune.get("id"):
             has_comune_update = True
@@ -1010,7 +1075,23 @@ def main():
             comune_state,
         )
 
-        print("Aggiornamento Telegram + Email completato.")
+        whatsapp_title = "🚀 Aggiornamento monitor scuola"
+        whatsapp_message = build_whatsapp_message(
+            has_new_circular,
+            circular,
+            new_news,
+            has_comune_update,
+        )
+        whatsapp_url = COMUNE_MILANO_URL if has_comune_update else DASHBOARD_URL
+
+        # Canale opzionale: non deve mai bloccare il monitor.
+        send_ifttt_whatsapp(
+            whatsapp_title,
+            whatsapp_message,
+            whatsapp_url,
+        )
+
+        print("Aggiornamento Telegram + Email + WhatsApp opzionale completato.")
     else:
         print("Nessun aggiornamento da notificare.")
 
