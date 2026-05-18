@@ -1,12 +1,12 @@
 import json
 import os
-import textwrap
 from datetime import datetime, timezone
+from io import BytesIO
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
 
 BASE_URL = "https://www.icsmoiseloria.edu.it"
 
@@ -17,18 +17,29 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 DASHBOARD_URL = os.getenv("DASHBOARD_URL", "https://adelisa-srg.github.io/circolari-loria-monitor/")
 
+# Se trovi un logo migliore, mettilo nei GitHub Secrets/Variables come LOGO_URL
+LOGO_URL = os.getenv("LOGO_URL", "https://www.icsmoiseloria.edu.it/favicon.ico")
+
 STATE_FILE = "last_circolare.json"
 NEWS_STATE_FILE = "last_news.json"
 DASHBOARD_FILE = "docs/data/dashboard.json"
-CARD_FILE = "school_update_card.png"
+CARD_FILE = "school_loria_card.png"
 
+
+# =========================
+# UTILS
+# =========================
 
 def normalize(text):
     return " ".join(text.replace("\xa0", " ").split()) if text else ""
 
 
 def fetch_soup(url):
-    response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    response = requests.get(
+        url,
+        timeout=30,
+        headers={"User-Agent": "Mozilla/5.0"},
+    )
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
 
@@ -36,17 +47,115 @@ def fetch_soup(url):
 def load_json(path, default):
     if not os.path.exists(path):
         return default
+
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_json(path, data):
     directory = os.path.dirname(path)
+
     if directory:
         os.makedirs(directory, exist_ok=True)
 
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def get_font(size, bold=False):
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+    ]
+
+    for path in candidates:
+        if os.path.exists(path):
+            return ImageFont.truetype(path, size)
+
+    return ImageFont.load_default()
+
+
+def text_width(draw, text, font):
+    box = draw.textbbox((0, 0), text, font=font)
+    return box[2] - box[0]
+
+
+def truncate(draw, text, font, max_width):
+    if text_width(draw, text, font) <= max_width:
+        return text
+
+    while text and text_width(draw, text + "...", font) > max_width:
+        text = text[:-1]
+
+    return text.strip() + "..."
+
+
+def wrap_lines(draw, text, font, max_width, max_lines=None):
+    words = text.split()
+    lines = []
+    current = ""
+
+    for word in words:
+        candidate = f"{current} {word}".strip()
+
+        if text_width(draw, candidate, font) <= max_width:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+
+    if current:
+        lines.append(current)
+
+    if max_lines and len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = truncate(draw, lines[-1], font, max_width)
+
+    return lines
+
+
+def rounded_rect(draw, box, radius, fill, outline=None, width=1):
+    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
+
+
+def draw_wrapped(draw, text, xy, font, fill, max_width, max_lines=None, spacing=8):
+    x, y = xy
+    lines = wrap_lines(draw, text, font, max_width, max_lines)
+
+    for line in lines:
+        draw.text((x, y), line, font=font, fill=fill)
+        bbox = draw.textbbox((x, y), line, font=font)
+        y += (bbox[3] - bbox[1]) + spacing
+
+    return y
+
+
+def paste_rounded(base, img, box, radius):
+    x1, y1, x2, y2 = box
+    size = (x2 - x1, y2 - y1)
+
+    img = ImageOps.fit(img, size, method=Image.LANCZOS).convert("RGBA")
+
+    mask = Image.new("L", size, 0)
+    mask_draw = ImageDraw.Draw(mask)
+    mask_draw.rounded_rectangle((0, 0, size[0], size[1]), radius=radius, fill=255)
+
+    base.paste(img, (x1, y1), mask)
+
+
+def load_logo(size=96):
+    try:
+        r = requests.get(LOGO_URL, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        img = Image.open(BytesIO(r.content)).convert("RGBA")
+        return img.resize((size, size), Image.LANCZOS)
+    except Exception:
+        # fallback elegante se il logo non è scaricabile
+        img = Image.new("RGBA", (size, size), (52, 211, 153, 255))
+        d = ImageDraw.Draw(img)
+        d.text((size // 2 - 14, size // 2 - 24), "L", font=get_font(42, True), fill="#04111f")
+        return img
 
 
 # =========================
@@ -65,15 +174,17 @@ def extract_latest_circular():
     for _ in range(20):
         if not card:
             break
+
         if "Pubblicato il:" in card.get_text():
             break
+
         card = card.parent
 
     if not card:
         raise Exception("Card circolare non trovata")
 
-    text = card.get_text("\n", strip=True)
-    lines = [normalize(l) for l in text.split("\n") if normalize(l)]
+    raw_text = card.get_text("\n", strip=True)
+    lines = [normalize(line) for line in raw_text.split("\n") if normalize(line)]
 
     title = ""
     circular_date = ""
@@ -84,17 +195,17 @@ def extract_latest_circular():
 
     for i, line in enumerate(lines):
         if line.startswith("Circolare del"):
-            circular_date = line.replace("Circolare del", "").strip()
+            circular_date = normalize(line.replace("Circolare del", ""))
             if i + 1 < len(lines):
                 title = lines[i + 1]
 
         elif line.startswith("Pubblicato il:"):
-            if i + 1 < len(lines):
-                published_date = lines[i + 1]
+            value = normalize(line.replace("Pubblicato il:", ""))
+            published_date = value or (lines[i + 1] if i + 1 < len(lines) else "")
 
         elif line.startswith("Tipologia:"):
-            if i + 1 < len(lines):
-                tipologia = lines[i + 1]
+            value = normalize(line.replace("Tipologia:", ""))
+            tipologia = value or (lines[i + 1] if i + 1 < len(lines) else "")
 
         elif line.startswith("Allegati:"):
             if i + 1 < len(lines):
@@ -107,6 +218,7 @@ def extract_latest_circular():
 
     if not title:
         raise Exception("Titolo circolare non estratto")
+
     if not link:
         raise Exception("Link circolare non estratto")
 
@@ -175,16 +287,14 @@ def extract_news(limit=10):
 
         seen.add(link)
 
-        items.append(
-            {
-                "id": link,
-                "type": "news",
-                "title": title,
-                "date": "",
-                "link": link,
-                "source_url": NEWS_URL,
-            }
-        )
+        items.append({
+            "id": link,
+            "type": "news",
+            "title": title,
+            "date": "",
+            "link": link,
+            "source_url": NEWS_URL,
+        })
 
         if len(items) >= limit:
             break
@@ -193,170 +303,111 @@ def extract_news(limit=10):
 
 
 # =========================
-# FONT / DRAW HELPERS
-# =========================
-
-def get_font(size, bold=False):
-    candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-    ]
-
-    for path in candidates:
-        if os.path.exists(path):
-            return ImageFont.truetype(path, size)
-
-    return ImageFont.load_default()
-
-
-def text_width(draw, text, font):
-    bbox = draw.textbbox((0, 0), text, font=font)
-    return bbox[2] - bbox[0]
-
-
-def truncate_text(draw, text, font, max_width):
-    if text_width(draw, text, font) <= max_width:
-        return text
-
-    ellipsis = "..."
-    while text and text_width(draw, text + ellipsis, font) > max_width:
-        text = text[:-1]
-
-    return text.strip() + ellipsis
-
-
-def draw_wrapped(draw, text, xy, font, fill, max_width, max_lines=None, line_spacing=8):
-    x, y = xy
-    words = text.split()
-    lines = []
-    current = ""
-
-    for word in words:
-        test = f"{current} {word}".strip()
-        if text_width(draw, test, font) <= max_width:
-            current = test
-        else:
-            if current:
-                lines.append(current)
-            current = word
-
-    if current:
-        lines.append(current)
-
-    if max_lines and len(lines) > max_lines:
-        lines = lines[:max_lines]
-        lines[-1] = truncate_text(draw, lines[-1], font, max_width)
-
-    for line in lines:
-        draw.text((x, y), line, font=font, fill=fill)
-        bbox = draw.textbbox((x, y), line, font=font)
-        y += (bbox[3] - bbox[1]) + line_spacing
-
-    return y
-
-
-def rounded_panel(draw, box, radius, fill, outline=None, width=1):
-    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
-
-
-# =========================
-# CARD GRAFICA PRO
+# CARD GLASSMORPHISM PRO
 # =========================
 
 def generate_card(circular, new_news):
-    width, height = 1080, 1350
-    img = Image.new("RGB", (width, height), "#06101D")
-    draw = ImageDraw.Draw(img)
+    width, height = 1080, 1600
+
+    bg = Image.new("RGB", (width, height), "#06101d")
+    draw = ImageDraw.Draw(bg)
+
+    # Apple-style gradient blur background
+    blobs = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    b = ImageDraw.Draw(blobs)
+    b.ellipse((-240, -180, 450, 430), fill=(20, 184, 166, 95))
+    b.ellipse((700, -220, 1330, 420), fill=(34, 197, 94, 80))
+    b.ellipse((640, 680, 1290, 1400), fill=(56, 189, 248, 55))
+    b.ellipse((-250, 940, 420, 1700), fill=(16, 185, 129, 45))
+    blobs = blobs.filter(ImageFilter.GaussianBlur(80))
+    bg = Image.alpha_composite(bg.convert("RGBA"), blobs).convert("RGB")
+    draw = ImageDraw.Draw(bg)
+
+    # subtle noise/dots
+    for i in range(0, width, 26):
+        for j in range(0, height, 26):
+            if (i + j) % 78 == 0:
+                draw.point((i, j), fill="#102034")
 
     # palette
-    bg = "#06101D"
-    panel = "#111E31"
-    panel_2 = "#0C1728"
-    panel_3 = "#0A1423"
-    border = "#24354D"
-    border_green = "#22C55E"
-    green = "#4ADE80"
-    green_soft = "#0D3B2F"
-    cyan = "#38BDF8"
-    cyan_soft = "#0B3550"
     white = "#F8FAFC"
     muted = "#A7B3C5"
-    muted_2 = "#7C8AA0"
+    muted_dark = "#718096"
+    green = "#4ADE80"
+    green_soft = "#0B3028"
+    cyan = "#38BDF8"
+    cyan_soft = "#0B3550"
+    panel = "#101D30"
+    panel_soft = "#0B1628"
+    border = "#2B3E58"
+    border_green = "#23C783"
 
     # fonts
-    font_hero = get_font(58, bold=True)
-    font_title = get_font(42, bold=True)
-    font_section = get_font(34, bold=True)
-    font_body = get_font(28, bold=True)
-    font_normal = get_font(25)
-    font_small = get_font(22)
-    font_tiny = get_font(18)
-    font_badge = get_font(24, bold=True)
+    font_logo = get_font(40, True)
+    font_hero = get_font(58, True)
+    font_sub = get_font(28)
+    font_title = get_font(36, True)
+    font_section = get_font(34, True)
+    font_body = get_font(26, True)
+    font_regular = get_font(24)
+    font_small = get_font(20)
+    font_tiny = get_font(17)
 
-    # background glow
-    draw.ellipse((-240, -220, 430, 390), fill="#0B3B42")
-    draw.ellipse((650, -240, 1290, 420), fill="#0B3A32")
-    draw.ellipse((760, 650, 1270, 1220), fill="#071F2E")
-
-    # outer border
-    rounded_panel(draw, (38, 38, width - 38, height - 38), 42, bg, "#105E46", 3)
+    # outer glass frame
+    rounded_rect(draw, (36, 36, width - 36, height - 36), 46, "#06101d", "#145c46", 3)
 
     x = 78
     y = 82
 
-    # logo
-    rounded_panel(draw, (x, y, x + 82, y + 82), 24, "#34D399", "#74F7C5", 2)
-    draw.text((x + 28, y + 23), "L", font=get_font(34, bold=True), fill="#042116")
+    # logo glass tile
+    rounded_rect(draw, (x, y, x + 96, y + 96), 28, "#12362f", "#39E6A4", 2)
+    logo = load_logo(78)
+    paste_rounded(bg, logo, (x + 9, y + 9, x + 87, y + 87), 20)
 
-    draw.text((x + 108, y - 3), "Scuola Loria", font=font_hero, fill=white)
-    draw.text((x + 112, y + 61), "Monitor automatico", font=get_font(30), fill=green)
-    draw.text((x + 112, y + 101), "Circolari e News", font=get_font(28), fill=muted)
+    draw.text((x + 122, y - 4), "Scuola Loria", font=font_hero, fill=white)
+    draw.text((x + 126, y + 64), "Monitor automatico", font=get_font(30), fill=green)
+    draw.text((x + 126, y + 104), "Circolari e News", font=font_sub, fill=muted)
 
-    today_label = datetime.now().strftime("%d/%m/%Y · %H:%M")
-    pill_x = width - 395
-    pill_y = y + 12
-    rounded_panel(draw, (pill_x, pill_y, width - 78, pill_y + 58), 26, "#0B2C26", "#2F9D74", 2)
+    now_label = datetime.now().strftime("%d/%m/%Y · %H:%M")
+    pill_x = width - 415
+    pill_y = y + 10
+    rounded_rect(draw, (pill_x, pill_y, width - 78, pill_y + 58), 28, "#0B2D26", "#29966F", 2)
     draw.ellipse((pill_x + 22, pill_y + 21, pill_x + 36, pill_y + 35), fill=green)
-    draw.text((pill_x + 48, pill_y + 16), "MONITOR ATTIVO", font=font_small, fill="#BBF7D0")
-    draw.text((pill_x, pill_y + 72), today_label, font=font_small, fill=muted)
+    draw.text((pill_x + 50, pill_y + 17), "MONITOR ATTIVO", font=font_small, fill="#BBF7D0")
+    draw.text((pill_x, pill_y + 74), now_label, font=font_small, fill=muted)
 
-    y = 235
+    y = 250
 
-    # main circular panel
-    rounded_panel(draw, (78, y, width - 78, y + 430), 30, panel, border, 2)
+    # circular glass card
+    rounded_rect(draw, (70, y, width - 70, y + 455), 34, panel, border, 2)
 
-    # badge circolare
-    rounded_panel(draw, (116, y + 32, 318, y + 78), 22, "#0B2F29", "#20B678", 2)
-    draw.text((140, y + 43), "CIRCOLARE", font=font_tiny, fill="#BBF7D0")
+    # soft inner highlight
+    highlight = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    hd = ImageDraw.Draw(highlight)
+    hd.rounded_rectangle((82, y + 10, width - 82, y + 445), 30, outline=(255, 255, 255, 24), width=1)
+    bg = Image.alpha_composite(bg.convert("RGBA"), highlight).convert("RGB")
+    draw = ImageDraw.Draw(bg)
 
-    # decorative document icon
-    icon_x = width - 290
-    icon_y = y + 72
-    draw.ellipse((icon_x, icon_y, icon_x + 150, icon_y + 150), outline=green, width=4)
-    draw.rectangle((icon_x + 52, icon_y + 42, icon_x + 101, icon_y + 108), outline=green, width=4)
-    draw.line((icon_x + 64, icon_y + 66, icon_x + 90, icon_y + 66), fill=green, width=3)
-    draw.line((icon_x + 64, icon_y + 82, icon_x + 90, icon_y + 82), fill=green, width=3)
-    rounded_panel(draw, (icon_x + 90, icon_y + 118, icon_x + 168, icon_y + 158), 20, "#16803E", "#7DF29B", 1)
-    draw.text((icon_x + 111, icon_y + 126), "NUOVA", font=font_tiny, fill="#DCFCE7")
+    rounded_rect(draw, (112, y + 34, 322, y + 82), 24, "#0B2F29", border_green, 2)
+    draw.text((142, y + 46), "CIRCOLARE", font=font_tiny, fill="#BFF7D2")
 
-    # title
-    title = circular.get("title", "Titolo non disponibile")
-    draw.text((116, y + 115), "NUOVA CIRCOLARE", font=font_small, fill=green)
+    draw.text((112, y + 116), "NUOVA CIRCOLARE", font=font_small, fill=green)
+
     draw_wrapped(
         draw,
-        title,
-        (116, y + 155),
+        circular.get("title", "Titolo non disponibile"),
+        (112, y + 158),
         font_title,
         white,
-        max_width=720,
+        max_width=850,
         max_lines=3,
-        line_spacing=10,
+        spacing=8,
     )
 
-    # meta boxes
-    meta_y = y + 305
+    meta_y = y + 330
     meta_w = 280
-    gap = 20
+    gap = 22
+
     meta = [
         ("DATA CIRCOLARE", circular.get("circular_date") or "N/D"),
         ("PUBBLICATA IL", circular.get("published_date") or "N/D"),
@@ -364,72 +415,83 @@ def generate_card(circular, new_news):
     ]
 
     for idx, (label, value) in enumerate(meta):
-        xx = 116 + idx * (meta_w + gap)
-        rounded_panel(draw, (xx, meta_y, xx + meta_w, meta_y + 95), 18, panel_2, border, 1)
+        xx = 112 + idx * (meta_w + gap)
+        rounded_rect(draw, (xx, meta_y, xx + meta_w, meta_y + 96), 20, panel_soft, border, 1)
         draw.text((xx + 22, meta_y + 18), label, font=font_tiny, fill=muted)
-        value_text = truncate_text(draw, value, font_normal, meta_w - 44)
-        draw.text((xx + 22, meta_y + 50), value_text, font=font_normal, fill=white)
+        draw.text((xx + 22, meta_y + 52), truncate(draw, value, font_regular, meta_w - 44), font=font_regular, fill=white)
 
-    y += 485
+    y += 525
 
     # news header
-    news_count = len(new_news)
-    draw.text((78, y), "NEWS", font=font_section, fill=white)
+    visible_news = new_news[:5]
+    news_count = len(visible_news)
+
+    draw.text((78, y), "News", font=font_section, fill=white)
 
     if news_count > 0:
         badge_text = f"+{news_count} NEWS"
-        bx = width - 300
+        bx = width - 310
         by = y - 10
 
-        # glow
-        draw.rounded_rectangle((bx - 8, by - 8, bx + 216, by + 68), radius=34, fill="#0B2F22")
-        draw.rounded_rectangle((bx, by, bx + 200, by + 60), radius=30, fill="#102E24", outline=green, width=2)
-        draw.text((bx + 32, by + 15), badge_text, font=font_badge, fill="#86EFAC")
+        # glow badge
+        glow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        gd = ImageDraw.Draw(glow)
+        gd.rounded_rectangle((bx - 20, by - 18, bx + 230, by + 82), 42, fill=(74, 222, 128, 90))
+        glow = glow.filter(ImageFilter.GaussianBlur(20))
+        bg = Image.alpha_composite(bg.convert("RGBA"), glow).convert("RGB")
+        draw = ImageDraw.Draw(bg)
 
-    y += 60
+        rounded_rect(draw, (bx, by, bx + 208, by + 64), 32, "#102E24", green, 2)
+        draw.text((bx + 34, by + 17), badge_text, font=get_font(24, True), fill="#BBF7D0")
 
-    # news panel
-    rounded_panel(draw, (78, y, width - 78, y + 390), 30, panel, border, 2)
+    y += 72
 
-    if new_news:
-        yy = y + 42
-        draw.text((116, yy), "NUOVE NEWS RILEVATE", font=font_small, fill=cyan)
-        yy += 52
+    # news glass card
+    news_top = y
+    news_h = 500
+    rounded_rect(draw, (70, news_top, width - 70, news_top + news_h), 34, panel, border, 2)
 
-        for idx, item in enumerate(new_news[:5], start=1):
-            rounded_panel(draw, (116, yy, 160, yy + 44), 22, cyan_soft, "#156B8A", 1)
-            draw.text((131, yy + 8), str(idx), font=font_tiny, fill="#BAE6FD")
+    if visible_news:
+        yy = news_top + 44
+        draw.text((112, yy), "NUOVE NEWS RILEVATE", font=font_small, fill=cyan)
+        yy += 58
 
-            draw_wrapped(
+        for idx, item in enumerate(visible_news, start=1):
+            rounded_rect(draw, (112, yy, 160, yy + 48), 24, cyan_soft, "#156B8A", 1)
+            draw.text((130, yy + 10), str(idx), font=font_tiny, fill="#BAE6FD")
+
+            yy = draw_wrapped(
                 draw,
                 item.get("title", "News senza titolo"),
                 (184, yy + 2),
-                font_normal,
+                font_regular,
                 white,
                 max_width=760,
                 max_lines=2,
-                line_spacing=5,
+                spacing=5,
             )
-            yy += 66
+            yy += 28
     else:
-        yy = y + 70
-        draw.text((116, yy), "Sistema aggiornato", font=font_body, fill=white)
-        draw.text((116, yy + 45), "Nessuna nuova news rilevata in questo controllo.", font=font_normal, fill=muted)
-        draw.line((116, yy + 105, width - 116, yy + 105), fill=border, width=2)
-        draw.text((116, yy + 140), "La dashboard resta disponibile per consultare lo storico recente.", font=font_small, fill=muted_2)
+        yy = news_top + 90
+        draw.text((112, yy), "Sistema aggiornato", font=font_body, fill=white)
+        draw.text((112, yy + 48), "Nessuna nuova news rilevata in questo controllo.", font=font_regular, fill=muted)
+        draw.line((112, yy + 124, width - 112, yy + 124), fill=border, width=2)
+        draw.text((112, yy + 160), "La dashboard resta disponibile per consultare lo storico recente.", font=font_small, fill=muted_dark)
 
-    y += 440
+    y = news_top + news_h + 42
 
-    # footer panel
-    rounded_panel(draw, (78, y, width - 78, y + 105), 26, "#0B2C26", "#1B8A68", 2)
-    draw.text((116, y + 25), "Dashboard aggiornata", font=font_body, fill=white)
-    draw.text((116, y + 62), "Tutti i dati sono sincronizzati e disponibili online.", font=font_small, fill=muted)
-    rounded_panel(draw, (width - 245, y + 25, width - 116, y + 80), 18, "#0E382B", "#4ADE80", 1)
-    draw.line((width - 213, y + 62, width - 195, y + 44), fill=green, width=4)
-    draw.line((width - 195, y + 44, width - 175, y + 55), fill=green, width=4)
-    draw.line((width - 175, y + 55, width - 150, y + 30), fill=green, width=4)
+    # footer card
+    rounded_rect(draw, (70, y, width - 70, y + 128), 30, "#0B2C26", "#1B8A68", 2)
+    draw.text((112, y + 30), "Dashboard aggiornata", font=font_body, fill=white)
+    draw.text((112, y + 75), "Dati sincronizzati e disponibili online.", font=font_regular, fill=muted)
 
-    img.save(CARD_FILE, quality=95)
+    # mini trend icon
+    rounded_rect(draw, (width - 260, y + 34, width - 112, y + 94), 20, "#0E382B", green, 1)
+    draw.line((width - 226, y + 76, width - 204, y + 54), fill=green, width=5)
+    draw.line((width - 204, y + 54, width - 180, y + 66), fill=green, width=5)
+    draw.line((width - 180, y + 66, width - 148, y + 36), fill=green, width=5)
+
+    bg.save(CARD_FILE, quality=95)
     return CARD_FILE
 
 
@@ -437,18 +499,16 @@ def generate_card(circular, new_news):
 # TELEGRAM
 # =========================
 
-def telegram_buttons(has_circular, has_news):
-    rows = []
-
+def telegram_buttons(has_circular):
     first_row = [{"text": "📊 Dashboard", "url": DASHBOARD_URL}]
 
     if has_circular:
         first_row.append({"text": "📄 Circolare", "url": CIRCOLARI_URL})
 
-    rows.append(first_row)
-    rows.append([{"text": "📰 Archivio news", "url": NEWS_URL}])
-
-    return rows
+    return [
+        first_row,
+        [{"text": "📰 Archivio news", "url": NEWS_URL}],
+    ]
 
 
 def build_summary_message(has_circular, circular, new_news):
@@ -549,8 +609,6 @@ def main():
     prev_news_ids = [n["id"] for n in prev_news]
     new_news = [n for n in news if n["id"] not in prev_news_ids]
 
-    should_notify = has_new_circular or bool(new_news)
-
     dashboard = {
         "last_update": datetime.now(timezone.utc).isoformat(),
         "site": "Istituto Comprensivo via Moisè Loria",
@@ -562,21 +620,14 @@ def main():
 
     save_json(DASHBOARD_FILE, dashboard)
 
-    if should_notify:
-        buttons = telegram_buttons(has_new_circular, bool(new_news))
+    if has_new_circular or new_news:
+        image_path = generate_card(circular, new_news)
+        send_telegram_photo(image_path)
 
-        # 1. Card grafica
-        try:
-            image_path = generate_card(circular, new_news)
-            send_telegram_photo(image_path)
-            print("Card grafica Telegram inviata.")
-        except Exception as e:
-            print(f"Errore card grafica: {e}")
-
-        # 2. Sintesi testuale con bottoni
         summary = build_summary_message(has_new_circular, circular, new_news)
-        send_telegram_text(summary, buttons)
-        print("Sintesi Telegram inviata.")
+        send_telegram_text(summary, telegram_buttons(has_new_circular))
+
+        print("Aggiornamento Telegram inviato.")
     else:
         print("Nessun aggiornamento da notificare.")
 
