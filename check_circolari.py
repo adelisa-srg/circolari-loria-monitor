@@ -1,3 +1,4 @@
+import hashlib
 import html
 import json
 import os
@@ -20,6 +21,9 @@ BASE_URL = "https://www.icsmoiseloria.edu.it"
 CIRCOLARI_URL = "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
 NEWS_URL = "https://www.icsmoiseloria.edu.it/archivio-news"
 
+COMUNE_MILANO_URL = "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie"
+COMUNE_TITLE = "Pre-scuola e giochi serali - Scuole primarie"
+
 DASHBOARD_URL = os.getenv(
     "DASHBOARD_URL",
     "https://adelisa-srg.github.io/circolari-loria-monitor/"
@@ -40,6 +44,8 @@ LOGO_URL = os.getenv("LOGO_URL", "https://www.icsmoiseloria.edu.it/favicon.ico")
 
 STATE_FILE = "last_circolare.json"
 NEWS_STATE_FILE = "last_news.json"
+COMUNE_STATE_FILE = "last_comune_milano.json"
+
 DASHBOARD_FILE = "docs/data/dashboard.json"
 CARD_FILE = "school_loria_card.png"
 
@@ -58,7 +64,11 @@ def fetch_soup(url):
     response = requests.get(
         url,
         timeout=30,
-        headers={"User-Agent": "Mozilla/5.0"},
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "it-IT,it;q=0.9,en;q=0.8",
+        },
     )
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
@@ -188,6 +198,10 @@ def load_logo(size=96):
     d = ImageDraw.Draw(img)
     d.text((size // 2 - 14, size // 2 - 24), "L", font=get_font(42, True), fill="#04111f")
     return img
+
+
+def esc(value):
+    return html.escape(str(value or ""))
 
 
 # =========================
@@ -332,6 +346,67 @@ def extract_news(limit=10):
             break
 
     return items
+
+
+# =========================
+# MONITOR COMUNE MILANO
+# =========================
+
+def extract_comune_milano_state():
+    soup = fetch_soup(COMUNE_MILANO_URL)
+
+    for tag in soup(["script", "style", "noscript", "svg", "iframe"]):
+        tag.decompose()
+
+    # Prova a limitare al contenuto principale se presente.
+    main = (
+        soup.find("main")
+        or soup.find(attrs={"role": "main"})
+        or soup.find("article")
+        or soup.body
+        or soup
+    )
+
+    text = normalize(main.get_text(" ", strip=True))
+
+    # Riduce falsi positivi su cookie/banner/menu standard.
+    noise_tokens = [
+        "cookie",
+        "privacy",
+        "preferenze",
+        "accessibilità",
+        "menu",
+        "cerca",
+        "accedi",
+        "login",
+        "facebook",
+        "twitter",
+        "linkedin",
+        "instagram",
+    ]
+
+    words = []
+    for word in text.split():
+        if word.lower() not in noise_tokens:
+            words.append(word)
+
+    clean_text = normalize(" ".join(words))
+
+    if len(clean_text) < 200:
+        raise Exception("Contenuto Comune Milano troppo corto: possibile pagina non caricata correttamente")
+
+    content_hash = hashlib.sha256(clean_text.encode("utf-8")).hexdigest()
+
+    return {
+        "id": content_hash,
+        "type": "external_page",
+        "source": "Comune di Milano",
+        "title": COMUNE_TITLE,
+        "url": COMUNE_MILANO_URL,
+        "hash": content_hash,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "preview": clean_text[:700],
+    }
 
 
 # =========================
@@ -532,21 +607,23 @@ def generate_card(circular, new_news):
 # TELEGRAM
 # =========================
 
-def telegram_buttons(has_circular):
+def telegram_buttons(has_circular, has_comune_update=False):
     first_row = [{"text": "📊 Dashboard", "url": DASHBOARD_URL}]
 
     if has_circular:
         first_row.append({"text": "📄 Circolare", "url": CIRCOLARI_URL})
 
-    return [
-        first_row,
-        [{"text": "📰 Archivio news", "url": NEWS_URL}],
-    ]
+    rows = [first_row, [{"text": "📰 Archivio news", "url": NEWS_URL}]]
+
+    if has_comune_update:
+        rows.append([{"text": "🏛️ Comune Milano", "url": COMUNE_MILANO_URL}])
+
+    return rows
 
 
-def build_summary_message(has_circular, circular, new_news):
+def build_summary_message(has_circular, circular, new_news, has_comune_update, comune_state):
     lines = [
-        "🚀 <b>AGGIORNAMENTO I.C.S MOISÈ LORIA</b>",
+        "🚀 <b>AGGIORNAMENTO MONITOR</b>",
         "",
         "━━━━━━━━━━━━━━━━━━━━",
     ]
@@ -554,7 +631,7 @@ def build_summary_message(has_circular, circular, new_news):
     if has_circular:
         lines.extend([
             "",
-            "📢 <b>Nuova circolare</b>",
+            "📢 <b>Nuova circolare scuola</b>",
             f"📄 {circular.get('title', '')[:95]}",
             f"🗓️ {circular.get('circular_date') or 'N/D'}",
             f"🏷️ {circular.get('tipologia') or 'N/D'}",
@@ -563,11 +640,19 @@ def build_summary_message(has_circular, circular, new_news):
     if new_news:
         lines.extend([
             "",
-            f"📰 <b>{len(new_news)} nuova/e news rilevate</b>",
+            f"📰 <b>{len(new_news)} nuova/e news scuola rilevate</b>",
         ])
 
         for idx, n in enumerate(new_news[:5], start=1):
             lines.append(f"{idx}. {n.get('title', '')[:75]}")
+
+    if has_comune_update and comune_state:
+        lines.extend([
+            "",
+            "🏛️ <b>Aggiornamento Comune di Milano</b>",
+            f"📌 {COMUNE_TITLE}",
+            "⚠️ La pagina monitorata è cambiata: verifica subito eventuali scadenze, iscrizioni o avvisi.",
+        ])
 
     lines.extend([
         "",
@@ -629,11 +714,7 @@ def send_telegram_text(text, buttons=None):
 # EMAIL RESEND
 # =========================
 
-def esc(value):
-    return html.escape(str(value or ""))
-
-
-def build_email_html(has_circular, circular, new_news):
+def build_email_html(has_circular, circular, new_news, has_comune_update, comune_state):
     news_items = ""
 
     for idx, item in enumerate(new_news[:5], start=1):
@@ -659,7 +740,7 @@ def build_email_html(has_circular, circular, new_news):
         news_items = """
         <tr>
           <td style="padding:14px 0;color:#94a3b8;">
-            Nessuna nuova news rilevata in questo controllo.
+            Nessuna nuova news scuola rilevata in questo controllo.
           </td>
         </tr>
         """
@@ -670,7 +751,7 @@ def build_email_html(has_circular, circular, new_news):
         circular_block = f"""
         <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(16,29,48,.92);border:1px solid rgba(148,163,184,.18);">
           <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#0B2F29;border:1px solid #23C783;color:#BBF7D0;font-size:12px;font-weight:800;letter-spacing:.06em;">
-            CIRCOLARE
+            CIRCOLARE SCUOLA
           </div>
 
           <h2 style="margin:18px 0 10px;color:#f8fafc;font-size:22px;line-height:1.25;">
@@ -691,6 +772,31 @@ def build_email_html(has_circular, circular, new_news):
         </div>
         """
 
+    comune_block = ""
+
+    if has_comune_update and comune_state:
+        comune_block = f"""
+        <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(29,20,48,.92);border:1px solid rgba(251,191,36,.35);">
+          <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#3A2A0A;border:1px solid #FBBF24;color:#FDE68A;font-size:12px;font-weight:800;letter-spacing:.06em;">
+            COMUNE DI MILANO
+          </div>
+
+          <h2 style="margin:18px 0 10px;color:#f8fafc;font-size:22px;line-height:1.25;">
+            {esc(COMUNE_TITLE)}
+          </h2>
+
+          <p style="margin:0;color:#d6d3d1;font-size:15px;line-height:1.7;">
+            La pagina monitorata è cambiata. Aprila subito per verificare eventuali aggiornamenti su iscrizioni, scadenze o avvisi.
+          </p>
+
+          <div style="margin-top:18px;">
+            <a href="{esc(COMUNE_MILANO_URL)}" style="display:inline-block;background:#FBBF24;color:#1c1917;padding:12px 16px;border-radius:12px;text-decoration:none;font-weight:900;">
+              Apri pagina Comune
+            </a>
+          </div>
+        </div>
+        """
+
     return f"""
     <!doctype html>
     <html>
@@ -704,18 +810,20 @@ def build_email_html(has_circular, circular, new_news):
             </div>
 
             <h1 style="margin:22px 0 6px;color:#f8fafc;font-size:34px;letter-spacing:-.04em;">
-              {SCHOOL_NAME}
+              Monitor Scuola & Comune
             </h1>
 
             <p style="margin:0;color:#a7b3c5;font-size:16px;">
-              Aggiornamento automatico circolari e news
+              Circolari, news scuola e pagina Comune di Milano
             </p>
 
             {circular_block}
 
+            {comune_block}
+
             <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(16,29,48,.92);border:1px solid rgba(148,163,184,.18);">
               <div>
-                <h2 style="margin:0;color:#f8fafc;font-size:22px;">News</h2>
+                <h2 style="margin:0;color:#f8fafc;font-size:22px;">News scuola</h2>
                 <div style="display:inline-block;margin-top:10px;background:#102E24;border:1px solid #4ADE80;color:#BBF7D0;padding:8px 12px;border-radius:999px;font-weight:900;">
                   +{len(new_news)} NEWS
                 </div>
@@ -744,7 +852,25 @@ def build_email_html(has_circular, circular, new_news):
     """
 
 
-def send_email(has_circular, circular, new_news):
+def build_email_subject(has_circular, new_news, has_comune_update):
+    parts = []
+
+    if has_circular:
+        parts.append("1 circolare")
+
+    if new_news:
+        parts.append(f"{len(new_news)} news")
+
+    if has_comune_update:
+        parts.append("Comune Milano aggiornato")
+
+    if not parts:
+        return "Monitor scuola aggiornato"
+
+    return "Aggiornamento monitor — " + ", ".join(parts)
+
+
+def send_email(has_circular, circular, new_news, has_comune_update, comune_state):
     if not RESEND_API_KEY:
         print("RESEND_API_KEY mancante: salto invio email.")
         return
@@ -762,8 +888,8 @@ def send_email(has_circular, circular, new_news):
     payload = {
         "from": RESEND_FROM,
         "to": recipients,
-        "subject": "Aggiornamento I.C.S Moisè Loria",
-        "html": build_email_html(has_circular, circular, new_news),
+        "subject": build_email_subject(has_circular, new_news, has_comune_update),
+        "html": build_email_html(has_circular, circular, new_news, has_comune_update, comune_state),
     }
 
     print("Invio email Resend...")
@@ -795,19 +921,45 @@ def main():
     circular = extract_latest_circular()
     news = extract_news()
 
+    comune_state = None
+    comune_error = None
+
+    try:
+        comune_state = extract_comune_milano_state()
+    except Exception as e:
+        comune_error = str(e)
+        print("Errore monitor Comune Milano:", comune_error)
+
     print("=== CIRCOLARE ===")
     print(json.dumps(circular, indent=2, ensure_ascii=False))
 
     print("=== NEWS ===")
     print(json.dumps(news, indent=2, ensure_ascii=False))
 
+    print("=== COMUNE MILANO ===")
+    print(json.dumps(comune_state, indent=2, ensure_ascii=False) if comune_state else comune_error)
+
     prev_circular = load_json(STATE_FILE, {})
     prev_news = load_json(NEWS_STATE_FILE, [])
+    prev_comune = load_json(COMUNE_STATE_FILE, {})
 
     has_new_circular = circular["id"] != prev_circular.get("id")
 
     prev_news_ids = [n["id"] for n in prev_news]
     new_news = [n for n in news if n["id"] not in prev_news_ids]
+
+    has_comune_update = False
+    is_first_comune_baseline = False
+
+    if comune_state:
+        if not prev_comune.get("id"):
+            is_first_comune_baseline = True
+            print("Prima baseline Comune Milano: salvo stato senza inviare alert.")
+        elif comune_state["id"] != prev_comune.get("id"):
+            has_comune_update = True
+            print("Aggiornamento rilevato su pagina Comune Milano.")
+        else:
+            print("Nessun aggiornamento Comune Milano.")
 
     dashboard = {
         "last_update": datetime.now(timezone.utc).isoformat(),
@@ -816,18 +968,47 @@ def main():
         "news_url": NEWS_URL,
         "circular": circular,
         "news": news,
+        "external_sources": {
+            "comune_milano": {
+                "url": COMUNE_MILANO_URL,
+                "title": COMUNE_TITLE,
+                "status": "ok" if comune_state else "error",
+                "last_state": comune_state,
+                "last_error": comune_error,
+            }
+        },
     }
 
     save_json(DASHBOARD_FILE, dashboard)
 
-    if has_new_circular or new_news:
-        image_path = generate_card(circular, new_news)
-        send_telegram_photo(image_path)
+    has_school_update = has_new_circular or bool(new_news)
+    has_any_update = has_school_update or has_comune_update
 
-        summary = build_summary_message(has_new_circular, circular, new_news)
-        send_telegram_text(summary, telegram_buttons(has_new_circular))
+    if has_any_update:
+        if has_school_update:
+            image_path = generate_card(circular, new_news)
+            send_telegram_photo(image_path)
 
-        send_email(has_new_circular, circular, new_news)
+        summary = build_summary_message(
+            has_new_circular,
+            circular,
+            new_news,
+            has_comune_update,
+            comune_state,
+        )
+
+        send_telegram_text(
+            summary,
+            telegram_buttons(has_new_circular, has_comune_update),
+        )
+
+        send_email(
+            has_new_circular,
+            circular,
+            new_news,
+            has_comune_update,
+            comune_state,
+        )
 
         print("Aggiornamento Telegram + Email completato.")
     else:
@@ -835,6 +1016,9 @@ def main():
 
     save_json(STATE_FILE, circular)
     save_json(NEWS_STATE_FILE, news)
+
+    if comune_state:
+        save_json(COMUNE_STATE_FILE, comune_state)
 
 
 if __name__ == "__main__":
