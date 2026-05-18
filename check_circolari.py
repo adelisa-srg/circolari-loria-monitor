@@ -27,7 +27,13 @@ def normalize(text):
 
 
 def fetch_soup(url):
-    response = requests.get(url, timeout=30)
+    response = requests.get(
+        url,
+        timeout=30,
+        headers={
+            "User-Agent": "Mozilla/5.0"
+        },
+    )
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
 
@@ -56,18 +62,19 @@ def send_telegram(text):
 
 def find_latest_circular_card(soup):
     marker = soup.find(string=lambda t: t and "Circolare del" in t)
+
     if not marker:
-        raise Exception("Nessuna circolare trovata")
+        raise Exception("Nessuna circolare trovata: marker 'Circolare del' assente")
 
     card = marker.parent
 
-    for _ in range(15):
+    for _ in range(20):
         if not card:
             break
 
         text = card.get_text(" ", strip=True)
 
-        if "Pubblicato il:" in text and "Tipologia:" in text and "Allegati:" in text:
+        if "Pubblicato il:" in text and "Tipologia:" in text:
             return card
 
         card = card.parent
@@ -81,6 +88,10 @@ def extract_latest_circular():
 
     full_text = card.get_text("\n", strip=True).replace("\xa0", " ")
     lines = [normalize(line) for line in full_text.split("\n") if normalize(line)]
+
+    print("=== DEBUG CIRCULAR LINES ===")
+    for i, line in enumerate(lines):
+        print(f"{i}: {line}")
 
     title = ""
     circular_date = ""
@@ -101,38 +112,82 @@ def extract_latest_circular():
         elif line.startswith("Tipologia:"):
             tipologia = normalize(line.replace("Tipologia:", ""))
 
+        elif line.startswith("Allegati:") and i + 1 < len(lines):
+            attachment_name = lines[i + 1]
+
+    if not title:
+        for line in lines:
+            if "CIRCOLARE" in line.upper() and not line.startswith("Circolare del"):
+                title = line
+                break
+
     links = card.find_all("a", href=True)
-    pdf_candidates = []
+
+    candidates = []
 
     for a in links:
         href = a.get("href", "")
         text = normalize(a.get_text(" ", strip=True))
         absolute_link = urljoin(BASE_URL, href)
 
-        if ".pdf" in href.lower() or ".pdf" in text.lower():
-            pdf_candidates.append(
-                {
-                    "text": text,
-                    "href": href,
-                    "absolute_link": absolute_link,
-                }
-            )
+        if not href:
+            continue
 
-    if pdf_candidates:
-        readable = [
-            c for c in pdf_candidates
-            if c["text"] and not re.fullmatch(r"\d+\.pdf", c["text"].strip(), re.IGNORECASE)
-        ]
-        chosen = readable[0] if readable else pdf_candidates[0]
+        if href.lower().startswith("javascript:"):
+            continue
 
-        attachment_name = chosen["text"] or chosen["href"].split("/")[-1]
+        if href.startswith("#"):
+            continue
+
+        score = 0
+
+        if ".pdf" in href.lower():
+            score += 50
+
+        if ".pdf" in text.lower():
+            score += 50
+
+        if "download" in href.lower():
+            score += 20
+
+        if "download" in text.lower():
+            score += 20
+
+        if "allegat" in href.lower() or "allegat" in text.lower():
+            score += 20
+
+        if "Circ" in text or "CIRC" in text:
+            score += 30
+
+        if text and not re.fullmatch(r"\d+\.pdf", text, re.IGNORECASE):
+            score += 10
+
+        candidates.append(
+            {
+                "score": score,
+                "text": text,
+                "href": href,
+                "absolute_link": absolute_link,
+            }
+        )
+
+    print("=== DEBUG LINK CANDIDATES ===")
+    print(json.dumps(candidates, ensure_ascii=False, indent=2))
+
+    if candidates:
+        candidates = sorted(candidates, key=lambda x: x["score"], reverse=True)
+        chosen = candidates[0]
+
         attachment_link = chosen["absolute_link"]
+
+        if not attachment_name:
+            attachment_name = chosen["text"] or chosen["href"].split("/")[-1]
 
     if not title:
         raise Exception("Titolo circolare non estratto")
 
     if not attachment_link:
-        raise Exception("Link allegato non estratto")
+        raise Exception("Link allegato/circolare non estratto")
 
     return {
         "id": attachment_link,
@@ -163,16 +218,30 @@ def extract_news(limit=10):
         if len(title) < 8:
             continue
 
-        if any(skip in title.lower() for skip in ["privacy", "cookie", "accessibilità", "amministrazione trasparente"]):
+        lower_title = title.lower()
+
+        if any(
+            skip in lower_title
+            for skip in [
+                "privacy",
+                "cookie",
+                "accessibilità",
+                "amministrazione trasparente",
+                "albo online",
+                "registro elettronico",
+                "mad",
+                "pon",
+                "pcto",
+            ]
+        ):
             continue
 
         link = urljoin(BASE_URL, href)
 
-        if link in seen:
+        if "icsmoiseloria.edu.it" not in link:
             continue
 
-        # filtro leggero: teniamo link interni verosimilmente news
-        if "icsmoiseloria.edu.it" not in link:
+        if link in seen:
             continue
 
         seen.add(link)
@@ -203,7 +272,10 @@ def load_json(path, default):
 
 
 def save_json(path, data):
-    os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
+    directory = os.path.dirname(path)
+
+    if directory:
+        os.makedirs(directory, exist_ok=True)
 
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -212,7 +284,7 @@ def save_json(path, data):
 def build_circular_message(item):
     return f"""📢 <b>Nuova circolare - Scuola Primaria</b>
 
-📄 <b>{item.get("title")}</b>
+📄 <b>{item.get("title") or "Titolo non disponibile"}</b>
 
 🗓️ <b>Data circolare:</b> {item.get("circular_date") or "N/D"}
 📌 <b>Pubblicata il:</b> {item.get("published_date") or "N/D"}
