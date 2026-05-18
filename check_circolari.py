@@ -13,8 +13,7 @@ NEWS_URL = "https://www.icsmoiseloria.edu.it/archivio-news"
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-IFTTT_KEY = os.getenv("IFTTT_KEY")
-DASHBOARD_URL = os.getenv("DASHBOARD_URL")
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "https://adelisa-srg.github.io/circolari-loria-monitor/")
 
 STATE_FILE = "last_circolare.json"
 NEWS_STATE_FILE = "last_news.json"
@@ -31,50 +30,53 @@ def fetch_soup(url):
     return BeautifulSoup(response.text, "html.parser")
 
 
-# =========================
-# TELEGRAM
-# =========================
+def send_telegram(text, buttons=None):
+    if not TELEGRAM_TOKEN:
+        raise Exception("TELEGRAM_TOKEN mancante")
+    if not TELEGRAM_CHAT_ID:
+        raise Exception("TELEGRAM_CHAT_ID mancante")
 
-def send_telegram(text):
-    requests.post(
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }
+
+    if buttons:
+        payload["reply_markup"] = {
+            "inline_keyboard": buttons
+        }
+
+    response = requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-        json={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": text,
-            "parse_mode": "HTML",
-        },
+        json=payload,
+        timeout=20,
     )
 
+    print("Telegram status:", response.status_code)
+    print("Telegram response:", response.text)
+    response.raise_for_status()
 
-# =========================
-# WHATSAPP via IFTTT
-# =========================
-
-def send_whatsapp(text):
-    if not IFTTT_KEY:
-        return
-
-    url = f"https://maker.ifttt.com/trigger/school_loria_update/with/key/{IFTTT_KEY}"
-
-    requests.post(url, json={
-        "value1": text
-    })
-
-
-# =========================
-# CIRCOLARI
-# =========================
 
 def extract_latest_circular():
     soup = fetch_soup(CIRCOLARI_URL)
 
     marker = soup.find(string=lambda t: t and "Circolare del" in t)
+    if not marker:
+        raise Exception("Nessuna circolare trovata")
+
     card = marker.parent
 
     for _ in range(20):
+        if not card:
+            break
         if "Pubblicato il:" in card.get_text():
             break
         card = card.parent
+
+    if not card:
+        raise Exception("Card circolare non trovata")
 
     text = card.get_text("\n", strip=True)
     lines = [normalize(l) for l in text.split("\n") if normalize(l)]
@@ -84,35 +86,48 @@ def extract_latest_circular():
     published_date = ""
     tipologia = ""
     link = ""
+    attachment_name = ""
 
     for i, line in enumerate(lines):
-        if "Circolare del" in line:
+        if line.startswith("Circolare del"):
             circular_date = line.replace("Circolare del", "").strip()
-            title = lines[i + 1]
+            if i + 1 < len(lines):
+                title = lines[i + 1]
 
-        elif "Pubblicato il:" in line:
-            published_date = lines[i + 1]
+        elif line.startswith("Pubblicato il:"):
+            if i + 1 < len(lines):
+                published_date = lines[i + 1]
 
-        elif "Tipologia:" in line:
-            tipologia = lines[i + 1]
+        elif line.startswith("Tipologia:"):
+            if i + 1 < len(lines):
+                tipologia = lines[i + 1]
+
+        elif line.startswith("Allegati:"):
+            if i + 1 < len(lines):
+                attachment_name = lines[i + 1]
 
     for a in card.find_all("a", href=True):
-        if "spaggiari" in a["href"]:
-            link = a["href"]
+        href = a["href"]
+        if "spaggiari" in href.lower():
+            link = href if href.startswith("http") else urljoin(BASE_URL, href)
+
+    if not title:
+        raise Exception("Titolo circolare non estratto")
+    if not link:
+        raise Exception("Link circolare non estratto")
 
     return {
         "id": link,
+        "type": "circular",
         "title": title,
         "circular_date": circular_date,
         "published_date": published_date,
         "tipologia": tipologia,
+        "attachment_name": attachment_name,
         "link": link,
+        "source_url": CIRCOLARI_URL,
     }
 
-
-# =========================
-# NEWS
-# =========================
 
 def extract_news(limit=10):
     soup = fetch_soup(NEWS_URL)
@@ -120,19 +135,39 @@ def extract_news(limit=10):
     items = []
     seen = set()
 
-    blacklist = ["numeri", "calendario", "offerta"]
+    blacklist = [
+        "numeri",
+        "calendario",
+        "offerta",
+        "progetti delle classi",
+        "panoramica",
+        "presentazione",
+        "la storia",
+        "le persone",
+        "i luoghi",
+        "organizzazione",
+        "le carte",
+        "scuola primaria",
+        "scuola secondaria",
+        "registro elettronico",
+        "amministrazione",
+        "privacy",
+        "cookie",
+        "accessibilità",
+    ]
 
     for a in soup.find_all("a", href=True):
         title = normalize(a.get_text())
         href = a["href"]
+        lower_title = title.lower()
 
-        if len(title) < 15:
+        if not title or len(title) < 15:
             continue
 
         if "/pagine/" not in href:
             continue
 
-        if any(b in title.lower() for b in blacklist):
+        if any(bad in lower_title for bad in blacklist):
             continue
 
         link = urljoin(BASE_URL, href)
@@ -144,8 +179,11 @@ def extract_news(limit=10):
 
         items.append({
             "id": link,
+            "type": "news",
             "title": title,
-            "link": link
+            "date": "",
+            "link": link,
+            "source_url": NEWS_URL,
         })
 
         if len(items) >= limit:
@@ -154,83 +192,99 @@ def extract_news(limit=10):
     return items
 
 
-# =========================
-# STORAGE
-# =========================
-
 def load_json(path, default):
     if not os.path.exists(path):
         return default
-    with open(path, "r") as f:
+
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_json(path, data):
     directory = os.path.dirname(path)
+
     if directory:
         os.makedirs(directory, exist_ok=True)
 
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-# =========================
-# MESSAGES
-# =========================
+def circular_buttons(c):
+    return [
+        [
+            {"text": "📄 Apri circolare", "url": c["link"]},
+            {"text": "📊 Dashboard", "url": DASHBOARD_URL},
+        ],
+        [
+            {"text": "🏫 Tutte le circolari", "url": CIRCOLARI_URL},
+        ],
+    ]
+
+
+def news_buttons(n):
+    return [
+        [
+            {"text": "📰 Apri news", "url": n["link"]},
+            {"text": "📊 Dashboard", "url": DASHBOARD_URL},
+        ],
+        [
+            {"text": "🏫 Archivio news", "url": NEWS_URL},
+        ],
+    ]
+
 
 def build_circular_message(c):
-    return f"""📢 NUOVA CIRCOLARE
+    return f"""📢 <b>NUOVA CIRCOLARE · SCUOLA PRIMARIA</b>
 
-📄 {c["title"]}
+━━━━━━━━━━━━━━━━━━━━
 
-🗓️ {c["circular_date"]}
-📌 {c["published_date"]}
-🏷️ {c["tipologia"]}
+📄 <b>{c["title"]}</b>
 
-👉 Apri:
-{c["link"]}
+🗓️ <b>Data circolare:</b> {c.get("circular_date") or "N/D"}
+📌 <b>Pubblicata il:</b> {c.get("published_date") or "N/D"}
+🏷️ <b>Tipologia:</b> {c.get("tipologia") or "N/D"}
 
-📊 Dashboard:
-{DASHBOARD_URL}
+━━━━━━━━━━━━━━━━━━━━
+
+Usa i pulsanti qui sotto 👇
 """
 
 
 def build_news_message(n):
-    return f"""📰 NUOVA NEWS
+    return f"""📰 <b>NUOVA NEWS · SCUOLA LORIA</b>
 
-📄 {n["title"]}
+━━━━━━━━━━━━━━━━━━━━
 
-👉 Apri:
-{n["link"]}
+📄 <b>{n["title"]}</b>
 
-📊 Dashboard:
-{DASHBOARD_URL}
+━━━━━━━━━━━━━━━━━━━━
+
+Usa i pulsanti qui sotto 👇
 """
 
-
-# =========================
-# MAIN
-# =========================
 
 def main():
     circular = extract_latest_circular()
     news = extract_news()
 
+    print("=== CIRCOLARE ===")
+    print(json.dumps(circular, indent=2, ensure_ascii=False))
+
+    print("=== NEWS ===")
+    print(json.dumps(news, indent=2, ensure_ascii=False))
+
     prev_circular = load_json(STATE_FILE, {})
     prev_news = load_json(NEWS_STATE_FILE, [])
 
-    # ===== CIRCOLARE =====
     if circular["id"] != prev_circular.get("id"):
-        msg = build_circular_message(circular)
-
-        send_telegram(msg)
-        send_whatsapp(msg)
-
+        send_telegram(build_circular_message(circular), circular_buttons(circular))
         print("Nuova circolare inviata")
+    else:
+        print("Nessuna nuova circolare.")
 
     save_json(STATE_FILE, circular)
 
-    # ===== NEWS =====
     prev_ids = [n["id"] for n in prev_news]
     new_news = [n for n in news if n["id"] not in prev_ids]
 
@@ -238,20 +292,19 @@ def main():
         print(f"Nuove news: {len(new_news)}")
 
         for n in new_news[:3]:
-            msg = build_news_message(n)
-
-            send_telegram(msg)
-            send_whatsapp(msg)
+            send_telegram(build_news_message(n), news_buttons(n))
+    else:
+        print("Nessuna nuova news.")
 
     save_json(NEWS_STATE_FILE, news)
 
-    # ===== DASHBOARD =====
     dashboard = {
         "last_update": datetime.now(timezone.utc).isoformat(),
-        "circular": circular,
-        "news": news,
+        "site": "Istituto Comprensivo via Moisè Loria",
         "circulars_url": CIRCOLARI_URL,
         "news_url": NEWS_URL,
+        "circular": circular,
+        "news": news,
     }
 
     save_json(DASHBOARD_FILE, dashboard)
