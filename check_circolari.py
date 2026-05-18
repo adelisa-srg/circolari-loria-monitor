@@ -55,16 +55,8 @@ def save_last(item):
         json.dump(item, f, ensure_ascii=False, indent=2)
 
 latest = get_latest()
-last = load_last()
 
-if last is None:
-    message = f"📢 <b>TEST notifiche attive</b>\n\n{latest['title']}\n\n{latest['link']}"
-    send_telegram(message)
-    save_last(latest)
-elif latest["link"] != last["link"]:
-    message = f"📢 <b>Nuova circolare scuola primaria</b>\n\n{latest['title']}\n\n{latest['link']}"
-    send_telegram(message)
-    save_last(latest)
-    print("Nuova circolare notificata.")
-else:
-    print("Nessuna nuova circolare.")
+message = f"📢 <b>TEST notifiche attive</b>\n\n{latest['title']}\n\n{latest['link']}"
+send_telegram(message)
+
+print("Test Telegram forzato inviato.")
