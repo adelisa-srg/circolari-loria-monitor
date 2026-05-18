@@ -43,6 +43,8 @@ NEWS_STATE_FILE = "last_news.json"
 DASHBOARD_FILE = "docs/data/dashboard.json"
 CARD_FILE = "school_loria_card.png"
 
+RESEND_FROM = "I.C.S Moisè Loria <notifiche@mail.aldevialabs.com>"
+
 
 # =========================
 # UTILS
@@ -387,7 +389,6 @@ def generate_card(circular, new_news):
     paste_rounded(bg, logo, (x + 9, y + 9, x + 95, y + 95), 22)
     draw = ImageDraw.Draw(bg)
 
-    # Titolo: larghezza controllata per non sovrapporsi al badge
     title_x = x + 132
     title_y = y - 2
     max_title_width = 560
@@ -401,7 +402,6 @@ def generate_card(circular, new_news):
     draw.text((title_x, y + 82), "Monitor automatico", font=get_font(29), fill=green)
     draw.text((title_x, y + 120), "Circolari e News", font=font_sub, fill=muted)
 
-    # Badge spostato in basso a destra per evitare overlap
     now_label = datetime.now().strftime("%d/%m/%Y · %H:%M")
     pill_x = width - 388
     pill_y = y + 122
@@ -760,13 +760,14 @@ def send_email(has_circular, circular, new_news):
         return
 
     payload = {
-        "from": "I.C.S Moisè Loria <onboarding@resend.dev>",
+        "from": RESEND_FROM,
         "to": recipients,
         "subject": "Aggiornamento I.C.S Moisè Loria",
         "html": build_email_html(has_circular, circular, new_news),
     }
 
     print("Invio email Resend...")
+    print(f"Mittente email: {RESEND_FROM}")
     print(f"Destinatari email: {recipients}")
 
     try:
@@ -787,6 +788,7 @@ def main():
     print("TELEGRAM_CHAT_ID presente:", bool(TELEGRAM_CHAT_ID))
     print("RESEND_API_KEY presente:", bool(RESEND_API_KEY))
     print("EMAIL_TO presente:", bool(EMAIL_TO))
+    print("RESEND_FROM:", RESEND_FROM)
     print("LOGO_FILE:", LOGO_FILE)
     print("LOGO_FILE exists:", os.path.exists(LOGO_FILE))
 
