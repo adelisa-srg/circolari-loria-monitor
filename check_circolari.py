@@ -11,6 +11,7 @@ BASE_URL = "https://www.icsmoiseloria.edu.it"
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+FORCE_NOTIFY = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
 
 STATE_FILE = "last_circolare.json"
 
@@ -43,24 +44,25 @@ def send_telegram(text):
     response.raise_for_status()
 
 
-def extract_first_circular_card(soup):
+def find_latest_card(soup):
     marker = soup.find(string=lambda t: t and "Circolare del" in t)
+
     if not marker:
-        raise Exception("Nessuna card circolare trovata: marker 'Circolare del' assente")
+        raise Exception("Nessuna circolare trovata: marker 'Circolare del' assente")
 
     card = marker.parent
 
-    # Risale il DOM finché trova un blocco che contiene anche allegati/link
-    for _ in range(10):
+    for _ in range(15):
         if not card:
             break
 
-        card_text = normalize(card.get_text(" ", strip=True))
-        has_date = "Pubblicato il:" in card_text
-        has_type = "Tipologia:" in card_text
-        has_link = card.find("a", href=True) is not None
+        text = card.get_text(" ", strip=True)
 
-        if has_date and has_type and has_link:
+        if (
+            "Pubblicato il:" in text
+            and "Tipologia:" in text
+            and "Allegati:" in text
+        ):
             return card
 
         card = card.parent
@@ -68,18 +70,40 @@ def extract_first_circular_card(soup):
     raise Exception("Card circolare trovata, ma struttura HTML non riconosciuta")
 
 
+def extract_label_value(full_text, label):
+    """
+    Estrae valori tipo:
+    Pubblicato il: 18/05/2026
+    Tipologia: Tutto il personale, Riservata
+    anche se HTML mette label e valore su nodi diversi.
+    """
+    pattern = rf"{re.escape(label)}\s*([^\n]+)"
+    match = re.search(pattern, full_text, re.IGNORECASE)
+
+    if match:
+        return normalize(match.group(1))
+
+    return ""
+
+
 def get_latest():
     response = requests.get(URL, timeout=30)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
-    card = extract_first_circular_card(soup)
+    card = find_latest_card(soup)
 
     full_text = card.get_text("\n", strip=True)
+    full_text = full_text.replace("\xa0", " ")
+
     lines = [normalize(line) for line in full_text.split("\n") if normalize(line)]
 
-    circular_date = ""
+    print("=== DEBUG LINES ===")
+    for i, line in enumerate(lines):
+        print(f"{i}: {line}")
+
     title = ""
+    circular_date = ""
     published_date = ""
     tipologia = ""
     attachment_name = ""
@@ -87,34 +111,69 @@ def get_latest():
 
     for i, line in enumerate(lines):
         if line.startswith("Circolare del"):
-            circular_date = line.replace("Circolare del", "").strip()
+            circular_date = normalize(line.replace("Circolare del", ""))
             if i + 1 < len(lines):
                 title = lines[i + 1]
 
-        elif line.startswith("Pubblicato il:"):
-            published_date = line.replace("Pubblicato il:", "").strip()
+        if line.startswith("Pubblicato il:"):
+            published_date = normalize(line.replace("Pubblicato il:", ""))
 
-        elif line.startswith("Tipologia:"):
-            tipologia = line.replace("Tipologia:", "").strip()
+        if line.startswith("Tipologia:"):
+            tipologia = normalize(line.replace("Tipologia:", ""))
 
-    # Cerca preferibilmente un PDF, altrimenti il primo link utile
+    if not published_date:
+        published_date = extract_label_value(full_text, "Pubblicato il:")
+
+    if not tipologia:
+        tipologia = extract_label_value(full_text, "Tipologia:")
+
+    # Se il titolo per qualche motivo non è stato preso dalla riga successiva
+    if not title:
+        for line in lines:
+            if "CIRCOLARE" in line.upper() and not line.startswith("Circolare del"):
+                title = line
+                break
+
     links = card.find_all("a", href=True)
-    pdf_link = None
+
+    pdf_candidates = []
 
     for a in links:
         href = a.get("href", "")
-        text = normalize(a.get_text(" ", strip=True))
-        if ".pdf" in href.lower() or ".pdf" in text.lower():
-            pdf_link = a
-            break
+        link_text = normalize(a.get_text(" ", strip=True))
+        absolute_link = urljoin(BASE_URL, href)
 
-    if not pdf_link and links:
-        pdf_link = links[0]
+        if ".pdf" in href.lower() or ".pdf" in link_text.lower():
+            pdf_candidates.append(
+                {
+                    "text": link_text,
+                    "href": href,
+                    "absolute_link": absolute_link,
+                }
+            )
 
-    if pdf_link:
-        attachment_name = normalize(pdf_link.get_text(" ", strip=True))
-        href = pdf_link["href"]
-        attachment_link = urljoin(BASE_URL, href)
+    if pdf_candidates:
+        # Preferisce il link con testo leggibile, non solo id numerico
+        readable = [
+            c for c in pdf_candidates
+            if c["text"] and not re.fullmatch(r"\d+\.pdf", c["text"].strip(), re.IGNORECASE)
+        ]
+
+        chosen = readable[0] if readable else pdf_candidates[0]
+
+        attachment_name = chosen["text"] or chosen["href"].split("/")[-1]
+        attachment_link = chosen["absolute_link"]
+
+    else:
+        # fallback: prova a leggere il nome allegato dalle righe dopo "Allegati:"
+        for i, line in enumerate(lines):
+            if line.startswith("Allegati:") and i + 1 < len(lines):
+                attachment_name = lines[i + 1]
+                break
+
+        first_link = links[0] if links else None
+        if first_link:
+            attachment_link = urljoin(BASE_URL, first_link.get("href", ""))
 
     if not title:
         raise Exception("Titolo circolare non estratto")
@@ -122,11 +181,8 @@ def get_latest():
     if not attachment_link:
         raise Exception("Link allegato/circolare non estratto")
 
-    # ID stabile: meglio il link allegato; se cambia quello, è nuova circolare
-    circular_id = attachment_link
-
     return {
-        "id": circular_id,
+        "id": attachment_link,
         "title": title,
         "circular_date": circular_date,
         "published_date": published_date,
@@ -152,42 +208,44 @@ def save_last(item):
 def build_message(latest):
     return f"""📢 <b>Nuova circolare - Scuola Primaria</b>
 
-📄 <b>{latest.get('title', 'Titolo non disponibile')}</b>
+📄 <b>{latest.get("title") or "Titolo non disponibile"}</b>
 
-🗓️ <b>Data circolare:</b> {latest.get('circular_date') or 'N/D'}
-📌 <b>Pubblicata il:</b> {latest.get('published_date') or 'N/D'}
-🏷️ <b>Tipologia:</b> {latest.get('tipologia') or 'N/D'}
+🗓️ <b>Data circolare:</b> {latest.get("circular_date") or "N/D"}
+📌 <b>Pubblicata il:</b> {latest.get("published_date") or "N/D"}
+🏷️ <b>Tipologia:</b> {latest.get("tipologia") or "N/D"}
 
 📎 <b>Allegato:</b>
-{latest.get('attachment_name') or 'N/D'}
+{latest.get("attachment_name") or "N/D"}
 
-👉 <a href="{latest.get('link')}">Apri documento</a>
+👉 <a href="{latest.get("link")}">Apri documento</a>
 """
 
 
-latest = get_latest()
+def main():
+    latest = get_latest()
 
-print("=== Ultima circolare estratta ===")
-print(json.dumps(latest, ensure_ascii=False, indent=2))
+    print("=== Ultima circolare estratta ===")
+    print(json.dumps(latest, ensure_ascii=False, indent=2))
 
-# TEST MODE: imposta FORCE_NOTIFY=true nei Secrets/Variables o nel workflow per forzare l'invio
-force_notify = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
+    last = load_last()
 
-last = load_last()
+    if FORCE_NOTIFY:
+        print("FORCE_NOTIFY=true: invio notifica forzata")
+        send_telegram(build_message(latest))
+        save_last(latest)
 
-if force_notify:
-    print("FORCE_NOTIFY=true: invio test forzato")
-    send_telegram(build_message(latest))
-    save_last(latest)
+    elif last is None:
+        save_last(latest)
+        print("Prima esecuzione: salvo stato iniziale senza inviare notifica.")
 
-elif last is None:
-    save_last(latest)
-    print("Prima esecuzione: salvo stato iniziale senza inviare notifica.")
+    elif latest["id"] != last.get("id"):
+        send_telegram(build_message(latest))
+        save_last(latest)
+        print("Nuova circolare notificata.")
 
-elif latest["id"] != last.get("id"):
-    send_telegram(build_message(latest))
-    save_last(latest)
-    print("Nuova circolare notificata.")
+    else:
+        print("Nessuna nuova circolare.")
 
-else:
-    print("Nessuna nuova circolare.")
+
+if __name__ == "__main__":
+    main()
