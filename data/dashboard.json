@@ -1,5 +1,5 @@
 {
-  "last_check_utc": "2026-05-18T15:07:27.641707+00:00",
+  "last_check_utc": "2026-05-18T15:13:01.043427+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
@@ -8,91 +8,91 @@
     "type": "circular",
     "title": "PRIMARIA ALUNNI CIRCOLARE N.38-Incontro di restituzione finale sul progetto psicomotricità",
     "circular_date": "18/05/2026",
-    "published_date": "",
-    "tipologia": "",
+    "published_date": "18/05/2026",
+    "tipologia": "Tutto il personale, Riservata",
     "attachment_name": "PRIMARIA Circ_38_ Restituzione progetto psicomotricità.pdf",
     "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/9750658?download=1",
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
     {
-      "id": "https://www.icsmoiseloria.edu.it#maincontent",
-      "type": "news",
-      "title": "Salta al contenuto",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it#maincontent",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
       "id": "https://www.icsmoiseloria.edu.it",
       "type": "news",
-      "title": "Italiano",
+      "title": "Français",
       "date": "",
       "link": "https://www.icsmoiseloria.edu.it",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=consigli di classe",
+      "id": "https://www.icsmoiseloria.edu.it/panoramica/Scuola",
       "type": "news",
-      "title": "Consigli di classe",
+      "title": "Panoramica",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=consigli di classe",
+      "link": "https://www.icsmoiseloria.edu.it/panoramica/Scuola",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=consigli di istituto",
+      "id": "https://www.icsmoiseloria.edu.it/pagine/presentazione",
       "type": "news",
-      "title": "Consigli di istituto",
+      "title": "Presentazione",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=consigli di istituto",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/presentazione",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=istituto",
+      "id": "https://www.icsmoiseloria.edu.it/luoghi",
       "type": "news",
-      "title": "Istituto",
+      "title": "I luoghi",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=istituto",
+      "link": "https://www.icsmoiseloria.edu.it/luoghi",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=organigramma",
+      "id": "https://www.icsmoiseloria.edu.it/persone",
       "type": "news",
-      "title": "Organigramma",
+      "title": "Le persone",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=organigramma",
+      "link": "https://www.icsmoiseloria.edu.it/persone",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=presidenza",
+      "id": "https://www.icsmoiseloria.edu.it/pagine/i-numeri-della-scuola",
       "type": "news",
-      "title": "Presidenza",
+      "title": "I numeri della scuola",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=presidenza",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/i-numeri-della-scuola",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=regolamento d'istituto",
+      "id": "https://www.icsmoiseloria.edu.it/carte-della-scuola",
       "type": "news",
-      "title": "Regolamento d'istituto",
+      "title": "Le carte della scuola",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=regolamento d'istituto",
+      "link": "https://www.icsmoiseloria.edu.it/carte-della-scuola",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=scuola primaria",
+      "id": "https://www.icsmoiseloria.edu.it/organizzazione",
       "type": "news",
-      "title": "Scuola primaria",
+      "title": "Organizzazione",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=scuola primaria",
+      "link": "https://www.icsmoiseloria.edu.it/organizzazione",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/cerca?tag=scuola secondaria",
+      "id": "https://www.icsmoiseloria.edu.it/pagine/presentazione-1",
       "type": "news",
-      "title": "Scuola secondaria",
+      "title": "La storia",
       "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/cerca?tag=scuola secondaria",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/presentazione-1",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/panoramica/Servizi",
+      "type": "news",
+      "title": "Panoramica",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/panoramica/Servizi",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     }
   ]
