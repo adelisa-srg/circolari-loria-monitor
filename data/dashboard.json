@@ -1,99 +1,64 @@
 {
-  "last_check_utc": "2026-05-18T15:13:01.043427+00:00",
-  "site": "Istituto Comprensivo via Moisè Loria",
-  "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
-  "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
-  "latest_circular": {
+  "last_update": "2026-05-18T15:22:05.679845+00:00",
+  "circular": {
     "id": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/9750658?download=1",
-    "type": "circular",
     "title": "PRIMARIA ALUNNI CIRCOLARE N.38-Incontro di restituzione finale sul progetto psicomotricità",
     "circular_date": "18/05/2026",
     "published_date": "18/05/2026",
     "tipologia": "Tutto il personale, Riservata",
     "attachment_name": "PRIMARIA Circ_38_ Restituzione progetto psicomotricità.pdf",
-    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/9750658?download=1",
-    "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
+    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/9750658?download=1"
   },
   "news": [
     {
-      "id": "https://www.icsmoiseloria.edu.it",
-      "type": "news",
-      "title": "Français",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/panoramica/Scuola",
-      "type": "news",
-      "title": "Panoramica",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/panoramica/Scuola",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/presentazione",
-      "type": "news",
-      "title": "Presentazione",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/presentazione",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/luoghi",
-      "type": "news",
-      "title": "I luoghi",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/luoghi",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/persone",
-      "type": "news",
-      "title": "Le persone",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/persone",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
       "id": "https://www.icsmoiseloria.edu.it/pagine/i-numeri-della-scuola",
-      "type": "news",
       "title": "I numeri della scuola",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/i-numeri-della-scuola",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+      "link": "https://www.icsmoiseloria.edu.it/pagine/i-numeri-della-scuola"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/carte-della-scuola",
-      "type": "news",
-      "title": "Le carte della scuola",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/carte-della-scuola",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+      "id": "https://www.icsmoiseloria.edu.it/pagine/calendario-eventi",
+      "title": "Calendario eventi",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/calendario-eventi"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/organizzazione",
-      "type": "news",
-      "title": "Organizzazione",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/organizzazione",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+      "id": "https://www.icsmoiseloria.edu.it/pagine/offerta-formativa",
+      "title": "Offerta formativa",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/offerta-formativa"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/presentazione-1",
-      "type": "news",
-      "title": "La storia",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/presentazione-1",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+      "id": "https://www.icsmoiseloria.edu.it/pagine/i-progetti-delle-classi",
+      "title": "I progetti delle classi",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/i-progetti-delle-classi"
     },
     {
-      "id": "https://www.icsmoiseloria.edu.it/panoramica/Servizi",
-      "type": "news",
-      "title": "Panoramica",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/panoramica/Servizi",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+      "id": "https://www.icsmoiseloria.edu.it/pagine/saggio-di-flauto",
+      "title": "Momento musicale al flauto dolce",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-di-flauto"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/progetto-educazione-alla-legalit",
+      "title": "Progetto \"Educazione alla Legalità\"",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/progetto-educazione-alla-legalit"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/giornata-sportiva---secondaria-carlo-porta-1",
+      "title": "Giornata Sportiva - Secondaria Carlo Porta",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/giornata-sportiva---secondaria-carlo-porta-1"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/saggio-finale-delle-classi-a-indirizzo-musicale",
+      "title": "Saggio finale delle classi a indirizzo musicale",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-finale-delle-classi-a-indirizzo-musicale"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/io-sono-laltro-agenda-2030---classe-vb---primaria-foppette",
+      "title": "\"Io sono l'altro: agenda 2030\" - classe VB - Primaria Foppette",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/io-sono-laltro-agenda-2030---classe-vb---primaria-foppette"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/perfezionamento-iscrizione-classi-prime-as-20262027",
+      "title": "Perfezionamento iscrizione classi prime A.S. 2026/2027",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/perfezionamento-iscrizione-classi-prime-as-20262027"
     }
   ]
 }
