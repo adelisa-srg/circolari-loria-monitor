@@ -2,7 +2,8 @@ name: Check Circolari
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # ogni giorno alle 08:00 circa in Italia durante ora estiva
+    - cron: '0 7,18 * * *'
+      timezone: Europe/Rome
   workflow_dispatch:
 
 permissions:
@@ -42,7 +43,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add last_circolare.json last_news.json docs/data/dashboard.json
+          git add last_circolare.json last_news.json last_comune_milano.json docs/data/dashboard.json
 
-          git commit -m "Update circulars and news dashboard" || echo "No changes to commit"
+          git commit -m "Update monitored sources dashboard" || echo "No changes to commit"
           git push
