@@ -2,7 +2,7 @@ name: Check Circolari
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # ogni giorno alle 08:00 (UTC 6 = 8 in Italia estate)
+    - cron: '0 6 * * *'   # ogni giorno alle 08:00 circa in Italia durante ora estiva
   workflow_dispatch:
 
 permissions:
@@ -34,6 +34,9 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DASHBOARD_URL: https://adelisa-srg.github.io/circolari-loria-monitor/
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          LOGO_URL: ${{ secrets.LOGO_URL }}
 
       - name: Commit updated state and dashboard
         run: |
