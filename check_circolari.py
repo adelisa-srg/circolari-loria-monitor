@@ -16,7 +16,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 FORCE_NOTIFY = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
 
 STATE_FILE = "last_circolare.json"
-DASHBOARD_FILE = "data/dashboard.json"
+DASHBOARD_FILE = "docs/data/dashboard.json"
 
 
 def normalize(text):
