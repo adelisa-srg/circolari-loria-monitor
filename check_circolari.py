@@ -1,6 +1,5 @@
 import json
 import os
-import re
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 
@@ -21,59 +20,42 @@ DASHBOARD_FILE = "data/dashboard.json"
 
 
 def normalize(text):
-    if not text:
-        return ""
-    return " ".join(text.replace("\xa0", " ").split())
+    return " ".join(text.replace("\xa0", " ").split()) if text else ""
 
 
 def fetch_soup(url):
-    response = requests.get(
-        url,
-        timeout=30,
-        headers={"User-Agent": "Mozilla/5.0"},
-    )
+    response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
 
 
 def send_telegram(text):
-    response = requests.post(
+    requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-        json={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": text,
-            "parse_mode": "HTML",
-        },
+        json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"},
         timeout=20,
     )
-    print(response.text)
 
 
 # =========================
 # CIRCOLARI
 # =========================
 
-def find_latest_circular_card(soup):
+def extract_latest_circular():
+    soup = fetch_soup(CIRCOLARI_URL)
+
     marker = soup.find(string=lambda t: t and "Circolare del" in t)
     card = marker.parent
 
     for _ in range(20):
         if not card:
             break
-        text = card.get_text(" ", strip=True)
-        if "Pubblicato il:" in text and "Tipologia:" in text:
-            return card
+        if "Pubblicato il:" in card.get_text():
+            break
         card = card.parent
 
-    raise Exception("Card circolare non trovata")
-
-
-def extract_latest_circular():
-    soup = fetch_soup(CIRCOLARI_URL)
-    card = find_latest_circular_card(soup)
-
-    full_text = card.get_text("\n", strip=True)
-    lines = [normalize(l) for l in full_text.split("\n") if normalize(l)]
+    text = card.get_text("\n", strip=True)
+    lines = [normalize(l) for l in text.split("\n") if normalize(l)]
 
     title = ""
     circular_date = ""
@@ -96,12 +78,9 @@ def extract_latest_circular():
         elif line.startswith("Allegati:"):
             attachment_name = lines[i + 1]
 
-    links = card.find_all("a", href=True)
-
-    for a in links:
-        href = a["href"]
-        if "spaggiari" in href:
-            attachment_link = href if href.startswith("http") else urljoin(BASE_URL, href)
+    for a in card.find_all("a", href=True):
+        if "spaggiari" in a["href"]:
+            attachment_link = a["href"]
 
     return {
         "id": attachment_link,
@@ -115,7 +94,7 @@ def extract_latest_circular():
 
 
 # =========================
-# NEWS (FIX DEFINITIVO)
+# NEWS (FIX VERO)
 # =========================
 
 def extract_news(limit=10):
@@ -123,19 +102,19 @@ def extract_news(limit=10):
 
     items = []
 
-    # prende SOLO articoli veri (card news)
-    articles = soup.find_all("article")
-
-    for art in articles:
-        a = art.find("a", href=True)
-        if not a:
-            continue
-
+    # prende SOLO link che puntano a pagine interne "pagine/"
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
         title = normalize(a.get_text())
-        link = urljoin(BASE_URL, a["href"])
 
-        if not title or len(title) < 10:
+        if not title or len(title) < 15:
             continue
+
+        # filtro chiave: le news vere stanno sotto /pagine/
+        if "/pagine/" not in href:
+            continue
+
+        link = urljoin(BASE_URL, href)
 
         items.append({
             "id": link,
@@ -156,14 +135,18 @@ def extract_news(limit=10):
 def load_json(path, default):
     if not os.path.exists(path):
         return default
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_json(path, data):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    directory = os.path.dirname(path)
+
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 # =========================
