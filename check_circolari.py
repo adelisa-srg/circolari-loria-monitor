@@ -24,38 +24,61 @@ def normalize(text):
 
 
 def fetch_soup(url):
-    response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    response = requests.get(
+        url,
+        timeout=30,
+        headers={"User-Agent": "Mozilla/5.0"},
+    )
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
 
 
 def send_telegram(text):
-    requests.post(
+    if not TELEGRAM_TOKEN:
+        raise Exception("TELEGRAM_TOKEN mancante")
+    if not TELEGRAM_CHAT_ID:
+        raise Exception("TELEGRAM_CHAT_ID mancante")
+
+    response = requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-        json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"},
+        json={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": False,
+        },
         timeout=20,
     )
 
+    print("Telegram status:", response.status_code)
+    print("Telegram response:", response.text)
+    response.raise_for_status()
 
-# =========================
-# CIRCOLARI
-# =========================
 
 def extract_latest_circular():
     soup = fetch_soup(CIRCOLARI_URL)
 
     marker = soup.find(string=lambda t: t and "Circolare del" in t)
+    if not marker:
+        raise Exception("Nessuna circolare trovata")
+
     card = marker.parent
 
     for _ in range(20):
         if not card:
             break
-        if "Pubblicato il:" in card.get_text():
+
+        text = card.get_text(" ", strip=True)
+        if "Pubblicato il:" in text and "Tipologia:" in text:
             break
+
         card = card.parent
 
-    text = card.get_text("\n", strip=True)
-    lines = [normalize(l) for l in text.split("\n") if normalize(l)]
+    if not card:
+        raise Exception("Card circolare non trovata")
+
+    full_text = card.get_text("\n", strip=True)
+    lines = [normalize(line) for line in full_text.split("\n") if normalize(line)]
 
     title = ""
     circular_date = ""
@@ -67,60 +90,103 @@ def extract_latest_circular():
     for i, line in enumerate(lines):
         if line.startswith("Circolare del"):
             circular_date = line.replace("Circolare del", "").strip()
-            title = lines[i + 1]
+            if i + 1 < len(lines):
+                title = lines[i + 1]
 
         elif line.startswith("Pubblicato il:"):
-            published_date = lines[i + 1]
+            if i + 1 < len(lines):
+                published_date = lines[i + 1]
 
         elif line.startswith("Tipologia:"):
-            tipologia = lines[i + 1]
+            if i + 1 < len(lines):
+                tipologia = lines[i + 1]
 
         elif line.startswith("Allegati:"):
-            attachment_name = lines[i + 1]
+            if i + 1 < len(lines):
+                attachment_name = lines[i + 1]
 
     for a in card.find_all("a", href=True):
-        if "spaggiari" in a["href"]:
-            attachment_link = a["href"]
+        href = a["href"]
+        if "spaggiari" in href.lower():
+            attachment_link = href if href.startswith("http") else urljoin(BASE_URL, href)
+
+    if not title:
+        raise Exception("Titolo circolare non estratto")
+
+    if not attachment_link:
+        raise Exception("Link circolare non estratto")
 
     return {
         "id": attachment_link,
+        "type": "circular",
         "title": title,
         "circular_date": circular_date,
         "published_date": published_date,
         "tipologia": tipologia,
         "attachment_name": attachment_name,
         "link": attachment_link,
+        "source_url": CIRCOLARI_URL,
     }
 
-
-# =========================
-# NEWS (FIX VERO)
-# =========================
 
 def extract_news(limit=10):
     soup = fetch_soup(NEWS_URL)
 
     items = []
+    seen = set()
 
-    # prende SOLO link che puntano a pagine interne "pagine/"
+    blacklist = [
+        "i numeri",
+        "calendario",
+        "offerta",
+        "progetti delle classi",
+        "panoramica",
+        "presentazione",
+        "la storia",
+        "le persone",
+        "i luoghi",
+        "organizzazione",
+        "le carte",
+        "scuola primaria",
+        "scuola secondaria",
+        "registro elettronico",
+        "amministrazione",
+        "privacy",
+        "cookie",
+        "accessibilità",
+    ]
+
     for a in soup.find_all("a", href=True):
         href = a["href"]
         title = normalize(a.get_text())
+        lower_title = title.lower()
 
         if not title or len(title) < 15:
             continue
 
-        # filtro chiave: le news vere stanno sotto /pagine/
         if "/pagine/" not in href:
+            continue
+
+        if any(bad in lower_title for bad in blacklist):
             continue
 
         link = urljoin(BASE_URL, href)
 
-        items.append({
-            "id": link,
-            "title": title,
-            "link": link
-        })
+        if link in seen:
+            continue
+
+        seen.add(link)
+
+        items.append(
+            {
+                "id": link,
+                "type": "news",
+                "title": title,
+                "date": "",
+                "link": link,
+                "source_url": NEWS_URL,
+            }
+        )
 
         if len(items) >= limit:
             break
@@ -128,13 +194,10 @@ def extract_news(limit=10):
     return items
 
 
-# =========================
-# STORAGE
-# =========================
-
 def load_json(path, default):
     if not os.path.exists(path):
         return default
+
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -149,45 +212,48 @@ def save_json(path, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-# =========================
-# MESSAGE
-# =========================
-
 def build_message(item):
     return f"""📢 <b>Nuova circolare - Scuola Primaria</b>
 
 📄 <b>{item["title"]}</b>
 
-🗓️ {item["circular_date"]}
-📌 {item["published_date"]}
-🏷️ {item["tipologia"]}
+🗓️ <b>Data circolare:</b> {item.get("circular_date") or "N/D"}
+📌 <b>Pubblicata il:</b> {item.get("published_date") or "N/D"}
+🏷️ <b>Tipologia:</b> {item.get("tipologia") or "N/D"}
 
 👉 <a href="{item["link"]}">Apri circolare</a>
 """
 
 
-# =========================
-# MAIN
-# =========================
-
 def main():
     latest = extract_latest_circular()
     news = extract_news()
 
+    print("=== CIRCOLARE ===")
+    print(json.dumps(latest, indent=2, ensure_ascii=False))
+
     print("=== NEWS ===")
     print(json.dumps(news, indent=2, ensure_ascii=False))
 
-    prev = load_json(STATE_FILE, {})
+    previous = load_json(STATE_FILE, {})
 
-    if FORCE_NOTIFY or latest["id"] != prev.get("id"):
+    should_notify = FORCE_NOTIFY or latest["id"] != previous.get("id")
+
+    if should_notify:
         send_telegram(build_message(latest))
+        print("Notifica Telegram inviata.")
+    else:
+        print("Nessuna nuova circolare.")
 
     save_json(STATE_FILE, latest)
 
     dashboard = {
         "last_update": datetime.now(timezone.utc).isoformat(),
+        "site": "Istituto Comprensivo via Moisè Loria",
+        "circulars_url": CIRCOLARI_URL,
+        "news_url": NEWS_URL,
         "circular": latest,
-        "news": news
+        "news": news,
     }
 
     save_json(DASHBOARD_FILE, dashboard)
