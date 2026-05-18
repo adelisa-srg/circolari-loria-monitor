@@ -5,6 +5,7 @@ from io import BytesIO
 from urllib.parse import urljoin
 
 import requests
+import resend
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
 
@@ -17,7 +18,11 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 DASHBOARD_URL = os.getenv("DASHBOARD_URL", "https://adelisa-srg.github.io/circolari-loria-monitor/")
 
-# Se trovi un logo migliore, mettilo nei GitHub Secrets/Variables come LOGO_URL
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+EMAIL_TO = os.getenv("EMAIL_TO")
+
+resend.api_key = RESEND_API_KEY
+
 LOGO_URL = os.getenv("LOGO_URL", "https://www.icsmoiseloria.edu.it/favicon.ico")
 
 STATE_FILE = "last_circolare.json"
@@ -25,10 +30,6 @@ NEWS_STATE_FILE = "last_news.json"
 DASHBOARD_FILE = "docs/data/dashboard.json"
 CARD_FILE = "school_loria_card.png"
 
-
-# =========================
-# UTILS
-# =========================
 
 def normalize(text):
     return " ".join(text.replace("\xa0", " ").split()) if text else ""
@@ -151,16 +152,11 @@ def load_logo(size=96):
         img = Image.open(BytesIO(r.content)).convert("RGBA")
         return img.resize((size, size), Image.LANCZOS)
     except Exception:
-        # fallback elegante se il logo non è scaricabile
         img = Image.new("RGBA", (size, size), (52, 211, 153, 255))
         d = ImageDraw.Draw(img)
         d.text((size // 2 - 14, size // 2 - 24), "L", font=get_font(42, True), fill="#04111f")
         return img
 
-
-# =========================
-# SCRAPING CIRCOLARI
-# =========================
 
 def extract_latest_circular():
     soup = fetch_soup(CIRCOLARI_URL)
@@ -235,10 +231,6 @@ def extract_latest_circular():
     }
 
 
-# =========================
-# SCRAPING NEWS
-# =========================
-
 def extract_news(limit=10):
     soup = fetch_soup(NEWS_URL)
 
@@ -302,17 +294,12 @@ def extract_news(limit=10):
     return items
 
 
-# =========================
-# CARD GLASSMORPHISM PRO
-# =========================
-
 def generate_card(circular, new_news):
     width, height = 1080, 1600
 
     bg = Image.new("RGB", (width, height), "#06101d")
     draw = ImageDraw.Draw(bg)
 
-    # Apple-style gradient blur background
     blobs = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     b = ImageDraw.Draw(blobs)
     b.ellipse((-240, -180, 450, 430), fill=(20, 184, 166, 95))
@@ -323,18 +310,15 @@ def generate_card(circular, new_news):
     bg = Image.alpha_composite(bg.convert("RGBA"), blobs).convert("RGB")
     draw = ImageDraw.Draw(bg)
 
-    # subtle noise/dots
     for i in range(0, width, 26):
         for j in range(0, height, 26):
             if (i + j) % 78 == 0:
                 draw.point((i, j), fill="#102034")
 
-    # palette
     white = "#F8FAFC"
     muted = "#A7B3C5"
     muted_dark = "#718096"
     green = "#4ADE80"
-    green_soft = "#0B3028"
     cyan = "#38BDF8"
     cyan_soft = "#0B3550"
     panel = "#101D30"
@@ -342,9 +326,7 @@ def generate_card(circular, new_news):
     border = "#2B3E58"
     border_green = "#23C783"
 
-    # fonts
-    font_logo = get_font(40, True)
-    font_hero = get_font(58, True)
+    font_hero = get_font(52, True)
     font_sub = get_font(28)
     font_title = get_font(36, True)
     font_section = get_font(34, True)
@@ -353,18 +335,16 @@ def generate_card(circular, new_news):
     font_small = get_font(20)
     font_tiny = get_font(17)
 
-    # outer glass frame
     rounded_rect(draw, (36, 36, width - 36, height - 36), 46, "#06101d", "#145c46", 3)
 
     x = 78
     y = 82
 
-    # logo glass tile
     rounded_rect(draw, (x, y, x + 96, y + 96), 28, "#12362f", "#39E6A4", 2)
     logo = load_logo(78)
     paste_rounded(bg, logo, (x + 9, y + 9, x + 87, y + 87), 20)
 
-    draw.text((x + 122, y - 4), "Scuola Loria", font=font_hero, fill=white)
+    draw.text((x + 122, y - 4), "I.C.S Moisè Loria", font=font_hero, fill=white)
     draw.text((x + 126, y + 64), "Monitor automatico", font=get_font(30), fill=green)
     draw.text((x + 126, y + 104), "Circolari e News", font=font_sub, fill=muted)
 
@@ -378,10 +358,8 @@ def generate_card(circular, new_news):
 
     y = 250
 
-    # circular glass card
     rounded_rect(draw, (70, y, width - 70, y + 455), 34, panel, border, 2)
 
-    # soft inner highlight
     highlight = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     hd = ImageDraw.Draw(highlight)
     hd.rounded_rectangle((82, y + 10, width - 82, y + 445), 30, outline=(255, 255, 255, 24), width=1)
@@ -422,7 +400,6 @@ def generate_card(circular, new_news):
 
     y += 525
 
-    # news header
     visible_news = new_news[:5]
     news_count = len(visible_news)
 
@@ -433,7 +410,6 @@ def generate_card(circular, new_news):
         bx = width - 310
         by = y - 10
 
-        # glow badge
         glow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         gd = ImageDraw.Draw(glow)
         gd.rounded_rectangle((bx - 20, by - 18, bx + 230, by + 82), 42, fill=(74, 222, 128, 90))
@@ -446,7 +422,6 @@ def generate_card(circular, new_news):
 
     y += 72
 
-    # news glass card
     news_top = y
     news_h = 500
     rounded_rect(draw, (70, news_top, width - 70, news_top + news_h), 34, panel, border, 2)
@@ -480,12 +455,10 @@ def generate_card(circular, new_news):
 
     y = news_top + news_h + 42
 
-    # footer card
     rounded_rect(draw, (70, y, width - 70, y + 128), 30, "#0B2C26", "#1B8A68", 2)
     draw.text((112, y + 30), "Dashboard aggiornata", font=font_body, fill=white)
     draw.text((112, y + 75), "Dati sincronizzati e disponibili online.", font=font_regular, fill=muted)
 
-    # mini trend icon
     rounded_rect(draw, (width - 260, y + 34, width - 112, y + 94), 20, "#0E382B", green, 1)
     draw.line((width - 226, y + 76, width - 204, y + 54), fill=green, width=5)
     draw.line((width - 204, y + 54, width - 180, y + 66), fill=green, width=5)
@@ -494,10 +467,6 @@ def generate_card(circular, new_news):
     bg.save(CARD_FILE, quality=95)
     return CARD_FILE
 
-
-# =========================
-# TELEGRAM
-# =========================
 
 def telegram_buttons(has_circular):
     first_row = [{"text": "📊 Dashboard", "url": DASHBOARD_URL}]
@@ -513,7 +482,7 @@ def telegram_buttons(has_circular):
 
 def build_summary_message(has_circular, circular, new_news):
     lines = [
-        "🚀 <b>AGGIORNAMENTO SCUOLA LORIA</b>",
+        "🚀 <b>AGGIORNAMENTO I.C.S MOISÈ LORIA</b>",
         "",
         "━━━━━━━━━━━━━━━━━━━━",
     ]
@@ -544,6 +513,114 @@ def build_summary_message(has_circular, circular, new_news):
     ])
 
     return "\n".join(lines)
+
+
+def build_email_html(has_circular, circular, new_news):
+    news_items = "".join(
+        f"""
+        <tr>
+          <td style="padding:14px 0;border-bottom:1px solid rgba(148,163,184,.16);">
+            <div style="font-size:15px;line-height:1.35;color:#f8fafc;font-weight:700;">{idx}. {item.get("title")}</div>
+          </td>
+        </tr>
+        """
+        for idx, item in enumerate(new_news[:5], start=1)
+    )
+
+    if not news_items:
+        news_items = """
+        <tr>
+          <td style="padding:14px 0;color:#94a3b8;">
+            Nessuna nuova news rilevata in questo controllo.
+          </td>
+        </tr>
+        """
+
+    circular_block = ""
+    if has_circular:
+        circular_block = f"""
+        <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(16,29,48,.92);border:1px solid rgba(148,163,184,.18);">
+          <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#0B2F29;border:1px solid #23C783;color:#BBF7D0;font-size:12px;font-weight:800;letter-spacing:.06em;">
+            CIRCOLARE
+          </div>
+          <h2 style="margin:18px 0 10px;color:#f8fafc;font-size:22px;line-height:1.2;">
+            {circular.get("title")}
+          </h2>
+          <p style="margin:0;color:#a7b3c5;font-size:15px;line-height:1.7;">
+            <b style="color:#f8fafc;">Data circolare:</b> {circular.get("circular_date") or "N/D"}<br>
+            <b style="color:#f8fafc;">Pubblicata il:</b> {circular.get("published_date") or "N/D"}<br>
+            <b style="color:#f8fafc;">Tipologia:</b> {circular.get("tipologia") or "N/D"}
+          </p>
+          <div style="margin-top:18px;">
+            <a href="{circular.get("link")}" style="display:inline-block;background:#4ADE80;color:#06101d;padding:12px 16px;border-radius:12px;text-decoration:none;font-weight:900;">
+              Apri circolare
+            </a>
+          </div>
+        </div>
+        """
+
+    return f"""
+    <!doctype html>
+    <html>
+    <body style="margin:0;padding:0;background:#06101d;font-family:Arial,Helvetica,sans-serif;color:#f8fafc;">
+      <div style="padding:36px 16px;background:radial-gradient(circle at top left,rgba(20,184,166,.25),transparent 35%),radial-gradient(circle at top right,rgba(34,197,94,.22),transparent 34%),#06101d;">
+        <div style="max-width:720px;margin:0 auto;border-radius:28px;background:rgba(15,29,48,.94);border:1px solid rgba(74,222,128,.28);overflow:hidden;box-shadow:0 28px 70px rgba(0,0,0,.35);">
+          <div style="padding:30px 30px 18px;">
+            <div style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0B2D26;border:1px solid #29966F;color:#BBF7D0;font-size:13px;font-weight:900;">
+              ● MONITOR ATTIVO
+            </div>
+            <h1 style="margin:22px 0 6px;color:#f8fafc;font-size:34px;letter-spacing:-.04em;">
+              I.C.S Moisè Loria
+            </h1>
+            <p style="margin:0;color:#a7b3c5;font-size:16px;">
+              Aggiornamento automatico circolari e news
+            </p>
+
+            {circular_block}
+
+            <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(16,29,48,.92);border:1px solid rgba(148,163,184,.18);">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <h2 style="margin:0;color:#f8fafc;font-size:22px;">News</h2>
+                <span style="display:inline-block;background:#102E24;border:1px solid #4ADE80;color:#BBF7D0;padding:8px 12px;border-radius:999px;font-weight:900;">
+                  +{len(new_news)} NEWS
+                </span>
+              </div>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;">
+                {news_items}
+              </table>
+            </div>
+
+            <div style="margin-top:28px;text-align:center;">
+              <a href="{DASHBOARD_URL}" style="display:inline-block;background:linear-gradient(135deg,#4ADE80,#38BDF8);color:#06101d;padding:14px 22px;border-radius:14px;text-decoration:none;font-weight:900;">
+                Apri dashboard scuola
+              </a>
+            </div>
+
+            <p style="margin:28px 0 0;color:#718096;font-size:12px;text-align:center;">
+              Generato automaticamente da GitHub Actions · Telegram Bot · Resend
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+    """
+
+
+def send_email(has_circular, circular, new_news):
+    if not RESEND_API_KEY or not EMAIL_TO:
+        print("Resend non configurato: salto invio email.")
+        return
+
+    response = resend.Emails.send({
+        "from": "I.C.S Moisè Loria <onboarding@resend.dev>",
+        "to": [EMAIL_TO],
+        "subject": "Aggiornamento I.C.S Moisè Loria",
+        "html": build_email_html(has_circular, circular, new_news),
+    })
+
+    print("Resend response:", response)
 
 
 def send_telegram_photo(image_path):
@@ -587,10 +664,6 @@ def send_telegram_text(text, buttons=None):
     response.raise_for_status()
 
 
-# =========================
-# MAIN
-# =========================
-
 def main():
     circular = extract_latest_circular()
     news = extract_news()
@@ -627,7 +700,9 @@ def main():
         summary = build_summary_message(has_new_circular, circular, new_news)
         send_telegram_text(summary, telegram_buttons(has_new_circular))
 
-        print("Aggiornamento Telegram inviato.")
+        send_email(has_new_circular, circular, new_news)
+
+        print("Aggiornamento Telegram + Email inviato.")
     else:
         print("Nessun aggiornamento da notificare.")
 
