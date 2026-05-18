@@ -2,8 +2,7 @@ name: Check Circolari
 
 on:
   schedule:
-    - cron: '0 7,18 * * *'
-      timezone: Europe/Rome
+    - cron: '0 5,16 * * *'   # 07:00 e 18:00 in Italia durante ora legale
   workflow_dispatch:
 
 permissions:
@@ -37,13 +36,18 @@ jobs:
           DASHBOARD_URL: https://adelisa-srg.github.io/circolari-loria-monitor/
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          IFTTT_KEY: ${{ secrets.IFTTT_KEY }}
 
       - name: Commit updated state and dashboard
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add last_circolare.json last_news.json last_comune_milano.json docs/data/dashboard.json
+          git add last_circolare.json last_news.json docs/data/dashboard.json
+
+          if [ -f last_comune_milano.json ]; then
+            git add last_comune_milano.json
+          fi
 
           git commit -m "Update monitored sources dashboard" || echo "No changes to commit"
           git push
