@@ -11,7 +11,12 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 STATE_FILE = "last_circolare.json"
 
 def send_telegram(text):
-    requests.post(
+    if not TELEGRAM_TOKEN:
+        raise Exception("TELEGRAM_TOKEN mancante")
+    if not TELEGRAM_CHAT_ID:
+        raise Exception("TELEGRAM_CHAT_ID mancante")
+
+    response = requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
         json={
             "chat_id": TELEGRAM_CHAT_ID,
@@ -20,6 +25,11 @@ def send_telegram(text):
         },
         timeout=20
     )
+
+    print("Telegram status:", response.status_code)
+    print("Telegram response:", response.text)
+
+    response.raise_for_status()
 
 def get_latest():
     html = requests.get(URL, timeout=20).text
