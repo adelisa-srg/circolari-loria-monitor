@@ -1,1 +1,106 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Circolari Loria Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+
+    .title {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .section {
+      margin-top: 30px;
+    }
+
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    .badge {
+      background: #22c55e;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>📊 Dashboard Scuola Loria</h1>
+<div id="lastUpdate"></div>
+
+<div class="section">
+  <h2>📢 Ultima Circolare</h2>
+  <div id="circular"></div>
+</div>
+
+<div class="section">
+  <h2>📰 News</h2>
+  <div id="news"></div>
+</div>
+
+<script>
+fetch("../data/dashboard.json")
+  .then(res => res.json())
+  .then(data => {
+
+    document.getElementById("lastUpdate").innerText =
+      "Aggiornato: " + data.last_update;
+
+    // CIRCOLARE
+    const c = data.circular;
+    document.getElementById("circular").innerHTML = `
+      <div class="card">
+        <div class="title">${c.title}</div>
+        <div>📅 ${c.circular_date}</div>
+        <div>📌 ${c.published_date}</div>
+        <div>🏷️ ${c.tipologia}</div>
+        <br>
+        <a href="${c.link}" target="_blank">👉 Apri circolare</a>
+      </div>
+    `;
+
+    // NEWS
+    let newsHtml = "";
+
+    data.news.forEach(n => {
+      newsHtml += `
+        <div class="card">
+          <div class="title">${n.title}</div>
+          <a href="${n.link}" target="_blank">Apri</a>
+        </div>
+      `;
+    });
+
+    document.getElementById("news").innerHTML = newsHtml;
+
+  });
+</script>
+
+</body>
+</html>
