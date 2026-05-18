@@ -2,7 +2,7 @@ name: Check Circolari
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # ogni giorno alle 08:00 ora italiana estiva
+    - cron: '0 6 * * *'   # ogni giorno alle 08:00 (UTC 6 = 8 in Italia estate)
   workflow_dispatch:
 
 permissions:
@@ -24,19 +24,23 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests beautifulsoup4
+        run: |
+          pip install --upgrade pip
+          pip install requests beautifulsoup4 pillow
 
       - name: Run monitor
         run: python check_circolari.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          FORCE_NOTIFY: "true"
+          DASHBOARD_URL: https://adelisa-srg.github.io/circolari-loria-monitor/
 
       - name: Commit updated state and dashboard
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add last_circolare.json docs/data/dashboard.json
-          git commit -m "Update circulars dashboard data" || echo "No changes to commit"
+
+          git add last_circolare.json last_news.json docs/data/dashboard.json
+
+          git commit -m "Update circulars + news dashboard" || echo "No changes to commit"
           git push
