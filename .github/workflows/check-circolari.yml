@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install requests beautifulsoup4 pillow
+          pip install requests beautifulsoup4 pillow resend
 
       - name: Run monitor
         run: python check_circolari.py
