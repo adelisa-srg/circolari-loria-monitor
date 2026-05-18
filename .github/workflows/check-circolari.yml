@@ -37,6 +37,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add last_circolare.json data/dashboard.json
+          git add last_circolare.json docs/data/dashboard.json
           git commit -m "Update circulars dashboard data" || echo "No changes to commit"
           git push
