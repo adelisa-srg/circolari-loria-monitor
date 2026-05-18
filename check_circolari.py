@@ -58,8 +58,9 @@ latest = get_latest()
 last = load_last()
 
 if last is None:
+    message = f"📢 <b>TEST notifiche attive</b>\n\n{latest['title']}\n\n{latest['link']}"
+    send_telegram(message)
     save_last(latest)
-    print("Prima esecuzione: salvo stato iniziale.")
 elif latest["link"] != last["link"]:
     message = f"📢 <b>Nuova circolare scuola primaria</b>\n\n{latest['title']}\n\n{latest['link']}"
     send_telegram(message)
