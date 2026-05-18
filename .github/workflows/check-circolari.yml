@@ -36,7 +36,6 @@ jobs:
           DASHBOARD_URL: https://adelisa-srg.github.io/circolari-loria-monitor/
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-          LOGO_URL: ${{ secrets.LOGO_URL }}
 
       - name: Commit updated state and dashboard
         run: |
@@ -45,5 +44,5 @@ jobs:
 
           git add last_circolare.json last_news.json docs/data/dashboard.json
 
-          git commit -m "Update circulars + news dashboard" || echo "No changes to commit"
+          git commit -m "Update circulars and news dashboard" || echo "No changes to commit"
           git push
