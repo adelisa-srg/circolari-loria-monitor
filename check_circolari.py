@@ -30,9 +30,7 @@ def fetch_soup(url):
     response = requests.get(
         url,
         timeout=30,
-        headers={
-            "User-Agent": "Mozilla/5.0"
-        },
+        headers={"User-Agent": "Mozilla/5.0"},
     )
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
@@ -107,10 +105,18 @@ def extract_latest_circular():
                 title = lines[i + 1]
 
         elif line.startswith("Pubblicato il:"):
-            published_date = normalize(line.replace("Pubblicato il:", ""))
+            value = normalize(line.replace("Pubblicato il:", ""))
+            if value:
+                published_date = value
+            elif i + 1 < len(lines):
+                published_date = lines[i + 1]
 
         elif line.startswith("Tipologia:"):
-            tipologia = normalize(line.replace("Tipologia:", ""))
+            value = normalize(line.replace("Tipologia:", ""))
+            if value:
+                tipologia = value
+            elif i + 1 < len(lines):
+                tipologia = lines[i + 1]
 
         elif line.startswith("Allegati:") and i + 1 < len(lines):
             attachment_name = lines[i + 1]
@@ -122,7 +128,6 @@ def extract_latest_circular():
                 break
 
     links = card.find_all("a", href=True)
-
     candidates = []
 
     for a in links:
@@ -208,37 +213,44 @@ def extract_news(limit=10):
     items = []
     seen = set()
 
+    bad_titles = [
+        "salta al contenuto",
+        "italiano",
+        "privacy",
+        "cookie",
+        "accessibilità",
+        "amministrazione trasparente",
+        "albo online",
+        "registro elettronico",
+        "mad",
+        "pon",
+        "pcto",
+        "consigli di classe",
+        "consigli di istituto",
+        "istituto",
+        "organigramma",
+        "presidenza",
+        "regolamento d'istituto",
+        "scuola primaria",
+        "scuola secondaria",
+    ]
+
     for a in soup.find_all("a", href=True):
         title = normalize(a.get_text(" ", strip=True))
         href = a.get("href", "")
-
-        if not title:
-            continue
-
-        if len(title) < 8:
-            continue
-
+        link = urljoin(BASE_URL, href)
         lower_title = title.lower()
 
-        if any(
-            skip in lower_title
-            for skip in [
-                "privacy",
-                "cookie",
-                "accessibilità",
-                "amministrazione trasparente",
-                "albo online",
-                "registro elettronico",
-                "mad",
-                "pon",
-                "pcto",
-            ]
-        ):
+        if not title or len(title) < 8:
             continue
 
-        link = urljoin(BASE_URL, href)
+        if any(bad in lower_title for bad in bad_titles):
+            continue
 
         if "icsmoiseloria.edu.it" not in link:
+            continue
+
+        if "#maincontent" in link or "/cerca?tag=" in link:
             continue
 
         if link in seen:
