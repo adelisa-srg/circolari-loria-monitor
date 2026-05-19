@@ -3,13 +3,11 @@ import html
 import json
 import os
 from datetime import datetime, timezone
-from io import BytesIO
 from urllib.parse import urljoin
 
 import requests
 import resend
 from bs4 import BeautifulSoup
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
 
 
 # =========================
@@ -34,6 +32,8 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 EMAIL_TO = os.getenv("EMAIL_TO")
+EMAIL_EXTRA_TO = os.getenv("EMAIL_EXTRA_TO", "tittytraversa@libero.it")
+
 resend.api_key = RESEND_API_KEY
 
 IFTTT_KEY = os.getenv("IFTTT_KEY")
@@ -41,15 +41,11 @@ IFTTT_EVENT = "school_loria_update"
 
 SCHOOL_NAME = "I.C.S Moisè Loria"
 
-LOGO_FILE = "assets/logo.png"
-LOGO_URL = os.getenv("LOGO_URL", "https://www.icsmoiseloria.edu.it/favicon.ico")
-
 STATE_FILE = "last_circolare.json"
 NEWS_STATE_FILE = "last_news.json"
 COMUNE_STATE_FILE = "last_comune_milano.json"
 
 DASHBOARD_FILE = "docs/data/dashboard.json"
-CARD_FILE = "school_loria_card.png"
 
 RESEND_FROM = "I.C.S Moisè Loria <notifiche@mail.aldevialabs.com>"
 
@@ -60,6 +56,10 @@ RESEND_FROM = "I.C.S Moisè Loria <notifiche@mail.aldevialabs.com>"
 
 def normalize(text):
     return " ".join(text.replace("\xa0", " ").split()) if text else ""
+
+
+def esc(value):
+    return html.escape(str(value or ""))
 
 
 def fetch_soup(url):
@@ -94,116 +94,26 @@ def save_json(path, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def get_font(size, bold=False):
-    candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-    ]
+def unique_list(values):
+    result = []
+    seen = set()
 
-    for path in candidates:
-        if os.path.exists(path):
-            return ImageFont.truetype(path, size)
+    for value in values:
+        if not value:
+            continue
 
-    return ImageFont.load_default()
+        item = value.strip()
 
+        if not item:
+            continue
 
-def text_width(draw, text, font):
-    box = draw.textbbox((0, 0), text, font=font)
-    return box[2] - box[0]
+        key = item.lower()
 
+        if key not in seen:
+            seen.add(key)
+            result.append(item)
 
-def truncate(draw, text, font, max_width):
-    if text_width(draw, text, font) <= max_width:
-        return text
-
-    while text and text_width(draw, text + "...", font) > max_width:
-        text = text[:-1]
-
-    return text.strip() + "..."
-
-
-def wrap_lines(draw, text, font, max_width, max_lines=None):
-    words = text.split()
-    lines = []
-    current = ""
-
-    for word in words:
-        candidate = f"{current} {word}".strip()
-
-        if text_width(draw, candidate, font) <= max_width:
-            current = candidate
-        else:
-            if current:
-                lines.append(current)
-            current = word
-
-    if current:
-        lines.append(current)
-
-    if max_lines and len(lines) > max_lines:
-        lines = lines[:max_lines]
-        lines[-1] = truncate(draw, lines[-1], font, max_width)
-
-    return lines
-
-
-def rounded_rect(draw, box, radius, fill, outline=None, width=1):
-    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
-
-
-def draw_wrapped(draw, text, xy, font, fill, max_width, max_lines=None, spacing=8):
-    x, y = xy
-    lines = wrap_lines(draw, text, font, max_width, max_lines)
-
-    for line in lines:
-        draw.text((x, y), line, font=font, fill=fill)
-        bbox = draw.textbbox((x, y), line, font=font)
-        y += (bbox[3] - bbox[1]) + spacing
-
-    return y
-
-
-def paste_rounded(base, img, box, radius):
-    x1, y1, x2, y2 = box
-    size = (x2 - x1, y2 - y1)
-
-    img = ImageOps.fit(img, size, method=Image.LANCZOS).convert("RGBA")
-
-    mask = Image.new("L", size, 0)
-    mask_draw = ImageDraw.Draw(mask)
-    mask_draw.rounded_rectangle((0, 0, size[0], size[1]), radius=radius, fill=255)
-
-    base.paste(img, (x1, y1), mask)
-
-
-def load_logo(size=96):
-    try:
-        if os.path.exists(LOGO_FILE):
-            print(f"Logo locale trovato: {LOGO_FILE}")
-            img = Image.open(LOGO_FILE).convert("RGBA")
-            return img.resize((size, size), Image.LANCZOS)
-        else:
-            print(f"Logo locale non trovato: {LOGO_FILE}")
-    except Exception as e:
-        print(f"Errore caricamento logo locale: {e}")
-
-    try:
-        print(f"Provo caricamento logo da URL: {LOGO_URL}")
-        r = requests.get(LOGO_URL, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
-        r.raise_for_status()
-        img = Image.open(BytesIO(r.content)).convert("RGBA")
-        return img.resize((size, size), Image.LANCZOS)
-    except Exception as e:
-        print(f"Errore caricamento logo URL: {e}")
-
-    img = Image.new("RGBA", (size, size), (52, 211, 153, 255))
-    d = ImageDraw.Draw(img)
-    d.text((size // 2 - 14, size // 2 - 24), "L", font=get_font(42, True), fill="#04111f")
-    return img
-
-
-def esc(value):
-    return html.escape(str(value or ""))
+    return result
 
 
 # =========================
@@ -214,6 +124,7 @@ def extract_latest_circular():
     soup = fetch_soup(CIRCOLARI_URL)
 
     marker = soup.find(string=lambda t: t and "Circolare del" in t)
+
     if not marker:
         raise Exception("Nessuna circolare trovata")
 
@@ -244,6 +155,7 @@ def extract_latest_circular():
     for i, line in enumerate(lines):
         if line.startswith("Circolare del"):
             circular_date = normalize(line.replace("Circolare del", ""))
+
             if i + 1 < len(lines):
                 title = lines[i + 1]
 
@@ -261,6 +173,7 @@ def extract_latest_circular():
 
     for a in card.find_all("a", href=True):
         href = a["href"]
+
         if "spaggiari" in href.lower():
             link = href if href.startswith("http") else urljoin(BASE_URL, href)
 
@@ -386,6 +299,7 @@ def extract_comune_milano_state():
     ]
 
     words = []
+
     for word in text.split():
         if word.lower() not in noise_tokens:
             words.append(word)
@@ -410,210 +324,19 @@ def extract_comune_milano_state():
 
 
 # =========================
-# CARD TELEGRAM
-# =========================
-
-def generate_card(circular, new_news):
-    width, height = 1080, 1600
-
-    bg = Image.new("RGB", (width, height), "#06101d")
-    draw = ImageDraw.Draw(bg)
-
-    blobs = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    b = ImageDraw.Draw(blobs)
-    b.ellipse((-240, -180, 450, 430), fill=(20, 184, 166, 95))
-    b.ellipse((700, -220, 1330, 420), fill=(34, 197, 94, 80))
-    b.ellipse((640, 680, 1290, 1400), fill=(56, 189, 248, 55))
-    b.ellipse((-250, 940, 420, 1700), fill=(16, 185, 129, 45))
-    blobs = blobs.filter(ImageFilter.GaussianBlur(80))
-    bg = Image.alpha_composite(bg.convert("RGBA"), blobs).convert("RGB")
-    draw = ImageDraw.Draw(bg)
-
-    for i in range(0, width, 26):
-        for j in range(0, height, 26):
-            if (i + j) % 78 == 0:
-                draw.point((i, j), fill="#102034")
-
-    white = "#F8FAFC"
-    muted = "#A7B3C5"
-    muted_dark = "#718096"
-    green = "#4ADE80"
-    cyan = "#38BDF8"
-    cyan_soft = "#0B3550"
-    panel = "#101D30"
-    panel_soft = "#0B1628"
-    border = "#2B3E58"
-    border_green = "#23C783"
-
-    font_hero = get_font(44, True)
-    font_sub = get_font(27)
-    font_title = get_font(36, True)
-    font_section = get_font(34, True)
-    font_body = get_font(26, True)
-    font_regular = get_font(24)
-    font_small = get_font(20)
-    font_tiny = get_font(17)
-
-    rounded_rect(draw, (36, 36, width - 36, height - 36), 46, "#06101d", "#145c46", 3)
-
-    x = 78
-    y = 82
-
-    rounded_rect(draw, (x, y, x + 104, y + 104), 30, "#12362f", "#39E6A4", 2)
-    logo = load_logo(86)
-    paste_rounded(bg, logo, (x + 9, y + 9, x + 95, y + 95), 22)
-    draw = ImageDraw.Draw(bg)
-
-    title_x = x + 132
-    title_y = y - 2
-    max_title_width = 560
-
-    title_lines = wrap_lines(draw, SCHOOL_NAME, font_hero, max_title_width, max_lines=2)
-    current_y = title_y
-    for line in title_lines:
-        draw.text((title_x, current_y), line, font=font_hero, fill=white)
-        current_y += 50
-
-    draw.text((title_x, y + 82), "Monitor automatico", font=get_font(29), fill=green)
-    draw.text((title_x, y + 120), "Circolari e News", font=font_sub, fill=muted)
-
-    now_label = datetime.now().strftime("%d/%m/%Y · %H:%M")
-    pill_x = width - 388
-    pill_y = y + 122
-
-    rounded_rect(draw, (pill_x, pill_y, width - 78, pill_y + 58), 28, "#0B2D26", "#29966F", 2)
-    draw.ellipse((pill_x + 22, pill_y + 21, pill_x + 36, pill_y + 35), fill=green)
-    draw.text((pill_x + 50, pill_y + 17), "MONITOR ATTIVO", font=font_small, fill="#BBF7D0")
-    draw.text((pill_x + 6, pill_y + 72), now_label, font=font_small, fill=muted)
-
-    y = 300
-
-    rounded_rect(draw, (70, y, width - 70, y + 455), 34, panel, border, 2)
-
-    highlight = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    hd = ImageDraw.Draw(highlight)
-    hd.rounded_rectangle((82, y + 10, width - 82, y + 445), 30, outline=(255, 255, 255, 24), width=1)
-    bg = Image.alpha_composite(bg.convert("RGBA"), highlight).convert("RGB")
-    draw = ImageDraw.Draw(bg)
-
-    rounded_rect(draw, (112, y + 34, 322, y + 82), 24, "#0B2F29", border_green, 2)
-    draw.text((142, y + 46), "CIRCOLARE", font=font_tiny, fill="#BFF7D2")
-
-    draw.text((112, y + 116), "NUOVA CIRCOLARE", font=font_small, fill=green)
-
-    draw_wrapped(
-        draw,
-        circular.get("title", "Titolo non disponibile"),
-        (112, y + 158),
-        font_title,
-        white,
-        max_width=850,
-        max_lines=3,
-        spacing=8,
-    )
-
-    meta_y = y + 330
-    meta_w = 280
-    gap = 22
-
-    meta = [
-        ("DATA CIRCOLARE", circular.get("circular_date") or "N/D"),
-        ("PUBBLICATA IL", circular.get("published_date") or "N/D"),
-        ("TIPOLOGIA", circular.get("tipologia") or "N/D"),
-    ]
-
-    for idx, (label, value) in enumerate(meta):
-        xx = 112 + idx * (meta_w + gap)
-        rounded_rect(draw, (xx, meta_y, xx + meta_w, meta_y + 96), 20, panel_soft, border, 1)
-        draw.text((xx + 22, meta_y + 18), label, font=font_tiny, fill=muted)
-        draw.text(
-            (xx + 22, meta_y + 52),
-            truncate(draw, value, font_regular, meta_w - 44),
-            font=font_regular,
-            fill=white,
-        )
-
-    y += 525
-
-    visible_news = new_news[:5]
-    news_count = len(new_news)
-
-    draw.text((78, y), "News", font=font_section, fill=white)
-
-    if news_count > 0:
-        badge_text = f"+{news_count} NEWS"
-        bx = width - 310
-        by = y - 10
-
-        glow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        gd = ImageDraw.Draw(glow)
-        gd.rounded_rectangle((bx - 20, by - 18, bx + 230, by + 82), 42, fill=(74, 222, 128, 90))
-        glow = glow.filter(ImageFilter.GaussianBlur(20))
-        bg = Image.alpha_composite(bg.convert("RGBA"), glow).convert("RGB")
-        draw = ImageDraw.Draw(bg)
-
-        rounded_rect(draw, (bx, by, bx + 208, by + 64), 32, "#102E24", green, 2)
-        draw.text((bx + 34, by + 17), badge_text, font=get_font(24, True), fill="#BBF7D0")
-
-    y += 72
-
-    news_top = y
-    news_h = 500
-    rounded_rect(draw, (70, news_top, width - 70, news_top + news_h), 34, panel, border, 2)
-
-    if visible_news:
-        yy = news_top + 44
-        draw.text((112, yy), "NUOVE NEWS RILEVATE", font=font_small, fill=cyan)
-        yy += 58
-
-        for idx, item in enumerate(visible_news, start=1):
-            rounded_rect(draw, (112, yy, 160, yy + 48), 24, cyan_soft, "#156B8A", 1)
-            draw.text((130, yy + 10), str(idx), font=font_tiny, fill="#BAE6FD")
-
-            yy = draw_wrapped(
-                draw,
-                item.get("title", "News senza titolo"),
-                (184, yy + 2),
-                font_regular,
-                white,
-                max_width=760,
-                max_lines=2,
-                spacing=5,
-            )
-            yy += 28
-    else:
-        yy = news_top + 90
-        draw.text((112, yy), "Sistema aggiornato", font=font_body, fill=white)
-        draw.text((112, yy + 48), "Nessuna nuova news rilevata in questo controllo.", font=font_regular, fill=muted)
-        draw.line((112, yy + 124, width - 112, yy + 124), fill=border, width=2)
-        draw.text((112, yy + 160), "La dashboard resta disponibile per consultare lo storico recente.", font=font_small, fill=muted_dark)
-
-    y = news_top + news_h + 42
-
-    rounded_rect(draw, (70, y, width - 70, y + 128), 30, "#0B2C26", "#1B8A68", 2)
-    draw.text((112, y + 30), "Dashboard aggiornata", font=font_body, fill=white)
-    draw.text((112, y + 75), "Dati sincronizzati e disponibili online.", font=font_regular, fill=muted)
-
-    rounded_rect(draw, (width - 260, y + 34, width - 112, y + 94), 20, "#0E382B", green, 1)
-    draw.line((width - 226, y + 76, width - 204, y + 54), fill=green, width=5)
-    draw.line((width - 204, y + 54, width - 180, y + 66), fill=green, width=5)
-    draw.line((width - 180, y + 66, width - 148, y + 36), fill=green, width=5)
-
-    bg.save(CARD_FILE, quality=95)
-    return CARD_FILE
-
-
-# =========================
-# TELEGRAM
+# TELEGRAM - SOLO TESTO
 # =========================
 
 def telegram_buttons(has_circular, has_comune_update=False):
-    first_row = [{"text": "📊 Dashboard", "url": DASHBOARD_URL}]
+    rows = []
+
+    main_row = [{"text": "📊 Dashboard", "url": DASHBOARD_URL}]
 
     if has_circular:
-        first_row.append({"text": "📄 Circolare", "url": CIRCOLARI_URL})
+        main_row.append({"text": "📄 Circolare", "url": CIRCOLARI_URL})
 
-    rows = [first_row, [{"text": "📰 Archivio news", "url": NEWS_URL}]]
+    rows.append(main_row)
+    rows.append([{"text": "📰 News scuola", "url": NEWS_URL}])
 
     if has_comune_update:
         rows.append([{"text": "🏛️ Comune Milano", "url": COMUNE_MILANO_URL}])
@@ -621,9 +344,12 @@ def telegram_buttons(has_circular, has_comune_update=False):
     return rows
 
 
-def build_summary_message(has_circular, circular, new_news, has_comune_update, comune_state):
+def build_telegram_message(has_circular, circular, new_news, has_comune_update, comune_state):
+    now_label = datetime.now().strftime("%d/%m/%Y · %H:%M")
+
     lines = [
-        "🚀 <b>AGGIORNAMENTO MONITOR</b>",
+        "🚀 <b>Monitor Scuola aggiornato</b>",
+        f"🕒 {now_label}",
         "",
         "━━━━━━━━━━━━━━━━━━━━",
     ]
@@ -631,61 +357,43 @@ def build_summary_message(has_circular, circular, new_news, has_comune_update, c
     if has_circular:
         lines.extend([
             "",
-            "📢 <b>Nuova circolare scuola</b>",
-            f"📄 {circular.get('title', '')[:95]}",
-            f"🗓️ {circular.get('circular_date') or 'N/D'}",
-            f"🏷️ {circular.get('tipologia') or 'N/D'}",
+            "📄 <b>Nuova circolare</b>",
+            f"<b>{esc(circular.get('title'))}</b>",
+            "",
+            f"🗓️ Data: {esc(circular.get('circular_date') or 'N/D')}",
+            f"🏷️ Tipologia: {esc(circular.get('tipologia') or 'N/D')}",
         ])
 
     if new_news:
         lines.extend([
             "",
-            f"📰 <b>{len(new_news)} nuova/e news scuola rilevate</b>",
+            f"📰 <b>{len(new_news)} nuova/e news scuola</b>",
         ])
 
-        for idx, n in enumerate(new_news[:5], start=1):
-            lines.append(f"{idx}. {n.get('title', '')[:75]}")
+        for idx, item in enumerate(new_news[:5], start=1):
+            lines.append(f"{idx}. {esc(item.get('title'))[:90]}")
 
     if has_comune_update and comune_state:
         lines.extend([
             "",
-            "🏛️ <b>Aggiornamento Comune di Milano</b>",
-            f"📌 {COMUNE_TITLE}",
-            "⚠️ La pagina monitorata è cambiata: verifica subito eventuali scadenze, iscrizioni o avvisi.",
+            "🏛️ <b>Comune di Milano aggiornato</b>",
+            f"📌 {esc(COMUNE_TITLE)}",
+            "⚠️ Controlla subito eventuali scadenze o avvisi.",
         ])
 
     lines.extend([
         "",
         "━━━━━━━━━━━━━━━━━━━━",
-        "",
         "👇 Apri i dettagli dai pulsanti qui sotto",
     ])
 
     return "\n".join(lines)
 
 
-def send_telegram_photo(image_path):
-    if not TELEGRAM_TOKEN:
-        raise Exception("TELEGRAM_TOKEN mancante")
-    if not TELEGRAM_CHAT_ID:
-        raise Exception("TELEGRAM_CHAT_ID mancante")
-
-    with open(image_path, "rb") as photo:
-        response = requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto",
-            data={"chat_id": TELEGRAM_CHAT_ID},
-            files={"photo": photo},
-            timeout=30,
-        )
-
-    print("Telegram photo status:", response.status_code)
-    print("Telegram photo response:", response.text)
-    response.raise_for_status()
-
-
 def send_telegram_text(text, buttons=None):
     if not TELEGRAM_TOKEN:
         raise Exception("TELEGRAM_TOKEN mancante")
+
     if not TELEGRAM_CHAT_ID:
         raise Exception("TELEGRAM_CHAT_ID mancante")
 
@@ -711,14 +419,76 @@ def send_telegram_text(text, buttons=None):
 
 
 # =========================
-# WHATSAPP VIA IFTTT - CANALE OPZIONALE
+# WHATSAPP VIA IFTTT - PREMIUM BREVE / OPZIONALE
 # =========================
+
+def build_whatsapp_title(has_circular, new_news, has_comune_update):
+    if has_comune_update:
+        return "🏛️ Alert Comune Milano"
+
+    if has_circular:
+        return "📄 Nuova circolare Loria"
+
+    if new_news:
+        return "📰 News I.C.S. Loria"
+
+    return "🚀 Monitor Scuola"
+
+
+def build_whatsapp_message(has_circular, circular, new_news, has_comune_update):
+    lines = []
+
+    if has_circular:
+        title = circular.get("title", "")
+        date = circular.get("circular_date") or "N/D"
+
+        lines.extend([
+            "Aggiornamento rilevato ✅",
+            "",
+            f"📄 {title[:180]}",
+            f"🗓️ {date}",
+        ])
+
+    if new_news:
+        lines.extend([
+            "",
+            f"📰 {len(new_news)} nuova/e news",
+        ])
+
+        for idx, item in enumerate(new_news[:3], start=1):
+            lines.append(f"{idx}. {item.get('title', '')[:80]}")
+
+    if has_comune_update:
+        lines.extend([
+            "Aggiornamento rilevato ✅",
+            "",
+            "🏛️ Comune di Milano",
+            "Pre-scuola e giochi serali",
+            "",
+            "Verifica eventuali scadenze o avvisi.",
+        ])
+
+    if not lines:
+        lines.append("Monitor aggiornato ✅")
+
+    return "\n".join(lines).strip()
+
+
+def build_whatsapp_url(has_circular, circular, has_comune_update):
+    if has_comune_update:
+        return COMUNE_MILANO_URL
+
+    if has_circular and circular.get("link"):
+        return circular["link"]
+
+    return DASHBOARD_URL
+
 
 def send_ifttt_whatsapp(title, message, url):
     """
     Canale opzionale/best effort.
-    Se IFTTT non è configurato, la trial è scaduta, la key è invalida
-    o l'applet non risponde, il monitor NON deve fallire.
+    Se IFTTT non è configurato, trial scaduta, key invalida o applet non disponibile,
+    il monitor NON fallisce.
     """
 
     if not IFTTT_KEY:
@@ -737,6 +507,7 @@ def send_ifttt_whatsapp(title, message, url):
 
     try:
         response = requests.post(endpoint, json=payload, timeout=20)
+
         print("IFTTT status:", response.status_code)
         print("IFTTT response:", response.text)
 
@@ -752,177 +523,15 @@ def send_ifttt_whatsapp(title, message, url):
         return
 
 
-def build_whatsapp_message(has_circular, circular, new_news, has_comune_update):
-    parts = []
-
-    if has_circular:
-        parts.append(
-            f"📄 Nuova circolare:\n{circular.get('title', '')}"
-        )
-
-    if new_news:
-        parts.append(
-            f"📰 {len(new_news)} nuova/e news scuola rilevate"
-        )
-
-    if has_comune_update:
-        parts.append(
-            "🏛️ Aggiornamento pagina Comune Milano - Pre-scuola e giochi serali"
-        )
-
-    if not parts:
-        parts.append("Monitor aggiornato.")
-
-    return "\n\n".join(parts)
-
-
 # =========================
-# EMAIL RESEND
+# EMAIL RESEND - HTML WOW
 # =========================
-
-def build_email_html(has_circular, circular, new_news, has_comune_update, comune_state):
-    news_items = ""
-
-    for idx, item in enumerate(new_news[:5], start=1):
-        title = esc(item.get("title"))
-        link = esc(item.get("link"))
-
-        news_items += f"""
-        <tr>
-          <td style="padding:14px 0;border-bottom:1px solid rgba(148,163,184,.16);">
-            <div style="font-size:15px;line-height:1.35;color:#f8fafc;font-weight:700;">
-              {idx}. {title}
-            </div>
-            <div style="margin-top:7px;">
-              <a href="{link}" style="color:#38BDF8;text-decoration:none;font-size:13px;font-weight:700;">
-                Apri news
-              </a>
-            </div>
-          </td>
-        </tr>
-        """
-
-    if not news_items:
-        news_items = """
-        <tr>
-          <td style="padding:14px 0;color:#94a3b8;">
-            Nessuna nuova news scuola rilevata in questo controllo.
-          </td>
-        </tr>
-        """
-
-    circular_block = ""
-
-    if has_circular:
-        circular_block = f"""
-        <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(16,29,48,.92);border:1px solid rgba(148,163,184,.18);">
-          <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#0B2F29;border:1px solid #23C783;color:#BBF7D0;font-size:12px;font-weight:800;letter-spacing:.06em;">
-            CIRCOLARE SCUOLA
-          </div>
-
-          <h2 style="margin:18px 0 10px;color:#f8fafc;font-size:22px;line-height:1.25;">
-            {esc(circular.get("title"))}
-          </h2>
-
-          <p style="margin:0;color:#a7b3c5;font-size:15px;line-height:1.7;">
-            <b style="color:#f8fafc;">Data circolare:</b> {esc(circular.get("circular_date") or "N/D")}<br>
-            <b style="color:#f8fafc;">Pubblicata il:</b> {esc(circular.get("published_date") or "N/D")}<br>
-            <b style="color:#f8fafc;">Tipologia:</b> {esc(circular.get("tipologia") or "N/D")}
-          </p>
-
-          <div style="margin-top:18px;">
-            <a href="{esc(circular.get("link"))}" style="display:inline-block;background:#4ADE80;color:#06101d;padding:12px 16px;border-radius:12px;text-decoration:none;font-weight:900;">
-              Apri circolare
-            </a>
-          </div>
-        </div>
-        """
-
-    comune_block = ""
-
-    if has_comune_update and comune_state:
-        comune_block = f"""
-        <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(29,20,48,.92);border:1px solid rgba(251,191,36,.35);">
-          <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#3A2A0A;border:1px solid #FBBF24;color:#FDE68A;font-size:12px;font-weight:800;letter-spacing:.06em;">
-            COMUNE DI MILANO
-          </div>
-
-          <h2 style="margin:18px 0 10px;color:#f8fafc;font-size:22px;line-height:1.25;">
-            {esc(COMUNE_TITLE)}
-          </h2>
-
-          <p style="margin:0;color:#d6d3d1;font-size:15px;line-height:1.7;">
-            La pagina monitorata è cambiata. Aprila subito per verificare eventuali aggiornamenti su iscrizioni, scadenze o avvisi.
-          </p>
-
-          <div style="margin-top:18px;">
-            <a href="{esc(COMUNE_MILANO_URL)}" style="display:inline-block;background:#FBBF24;color:#1c1917;padding:12px 16px;border-radius:12px;text-decoration:none;font-weight:900;">
-              Apri pagina Comune
-            </a>
-          </div>
-        </div>
-        """
-
-    return f"""
-    <!doctype html>
-    <html>
-    <body style="margin:0;padding:0;background:#06101d;font-family:Arial,Helvetica,sans-serif;color:#f8fafc;">
-      <div style="padding:36px 16px;background:radial-gradient(circle at top left,rgba(20,184,166,.25),transparent 35%),radial-gradient(circle at top right,rgba(34,197,94,.22),transparent 34%),#06101d;">
-        <div style="max-width:720px;margin:0 auto;border-radius:28px;background:rgba(15,29,48,.94);border:1px solid rgba(74,222,128,.28);overflow:hidden;box-shadow:0 28px 70px rgba(0,0,0,.35);">
-
-          <div style="padding:30px 30px 18px;">
-            <div style="display:inline-block;padding:9px 14px;border-radius:999px;background:#0B2D26;border:1px solid #29966F;color:#BBF7D0;font-size:13px;font-weight:900;">
-              ● MONITOR ATTIVO
-            </div>
-
-            <h1 style="margin:22px 0 6px;color:#f8fafc;font-size:34px;letter-spacing:-.04em;">
-              Monitor Scuola & Comune
-            </h1>
-
-            <p style="margin:0;color:#a7b3c5;font-size:16px;">
-              Circolari, news scuola e pagina Comune di Milano
-            </p>
-
-            {circular_block}
-
-            {comune_block}
-
-            <div style="margin-top:24px;padding:22px;border-radius:22px;background:rgba(16,29,48,.92);border:1px solid rgba(148,163,184,.18);">
-              <div>
-                <h2 style="margin:0;color:#f8fafc;font-size:22px;">News scuola</h2>
-                <div style="display:inline-block;margin-top:10px;background:#102E24;border:1px solid #4ADE80;color:#BBF7D0;padding:8px 12px;border-radius:999px;font-weight:900;">
-                  +{len(new_news)} NEWS
-                </div>
-              </div>
-
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;">
-                {news_items}
-              </table>
-            </div>
-
-            <div style="margin-top:28px;text-align:center;">
-              <a href="{esc(DASHBOARD_URL)}" style="display:inline-block;background:linear-gradient(135deg,#4ADE80,#38BDF8);color:#06101d;padding:14px 22px;border-radius:14px;text-decoration:none;font-weight:900;">
-                Apri dashboard scuola
-              </a>
-            </div>
-
-            <p style="margin:28px 0 0;color:#718096;font-size:12px;text-align:center;">
-              Generato automaticamente da GitHub Actions · Telegram Bot · Resend · IFTTT opzionale
-            </p>
-          </div>
-
-        </div>
-      </div>
-    </body>
-    </html>
-    """
-
 
 def build_email_subject(has_circular, new_news, has_comune_update):
     parts = []
 
     if has_circular:
-        parts.append("1 circolare")
+        parts.append("nuova circolare")
 
     if new_news:
         parts.append(f"{len(new_news)} news")
@@ -931,9 +540,186 @@ def build_email_subject(has_circular, new_news, has_comune_update):
         parts.append("Comune Milano aggiornato")
 
     if not parts:
-        return "Monitor scuola aggiornato"
+        return "Monitor Scuola aggiornato"
 
-    return "Aggiornamento monitor — " + ", ".join(parts)
+    return "🚀 Monitor Scuola — " + ", ".join(parts)
+
+
+def build_stat_badge(label, value):
+    return f"""
+    <td style="padding:8px;">
+      <div style="background:rgba(15,23,42,.74);border:1px solid rgba(148,163,184,.22);border-radius:18px;padding:16px 14px;text-align:center;">
+        <div style="font-size:24px;font-weight:900;color:#f8fafc;line-height:1;">{esc(value)}</div>
+        <div style="margin-top:8px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;">{esc(label)}</div>
+      </div>
+    </td>
+    """
+
+
+def build_email_html(has_circular, circular, new_news, has_comune_update, comune_state):
+    now_label = datetime.now().strftime("%d/%m/%Y · %H:%M")
+
+    circular_block = ""
+
+    if has_circular:
+        circular_block = f"""
+        <div style="margin-top:22px;background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(56,189,248,.10));border:1px solid rgba(74,222,128,.38);border-radius:24px;padding:24px;">
+          <div style="display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(6,78,59,.88);border:1px solid rgba(74,222,128,.65);color:#bbf7d0;font-size:12px;font-weight:900;letter-spacing:.08em;">
+            📄 NUOVA CIRCOLARE
+          </div>
+
+          <h2 style="margin:18px 0 10px;color:#f8fafc;font-size:24px;line-height:1.24;letter-spacing:-.02em;">
+            {esc(circular.get("title"))}
+          </h2>
+
+          <div style="margin-top:16px;background:rgba(2,6,23,.34);border-radius:18px;padding:16px 18px;color:#cbd5e1;font-size:15px;line-height:1.75;">
+            <div><strong style="color:#f8fafc;">Data circolare:</strong> {esc(circular.get("circular_date") or "N/D")}</div>
+            <div><strong style="color:#f8fafc;">Pubblicata il:</strong> {esc(circular.get("published_date") or "N/D")}</div>
+            <div><strong style="color:#f8fafc;">Tipologia:</strong> {esc(circular.get("tipologia") or "N/D")}</div>
+          </div>
+
+          <div style="margin-top:20px;">
+            <a href="{esc(circular.get("link"))}" style="display:inline-block;background:linear-gradient(135deg,#4ade80,#22c55e);color:#052e16;text-decoration:none;padding:14px 18px;border-radius:14px;font-weight:900;font-size:14px;">
+              Apri circolare →
+            </a>
+          </div>
+        </div>
+        """
+
+    news_rows = ""
+
+    if new_news:
+        for idx, item in enumerate(new_news[:6], start=1):
+            news_rows += f"""
+            <tr>
+              <td style="padding:14px 0;border-bottom:1px solid rgba(148,163,184,.14);">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td width="42" valign="top">
+                      <div style="width:32px;height:32px;border-radius:999px;background:rgba(56,189,248,.16);border:1px solid rgba(56,189,248,.42);color:#bae6fd;text-align:center;line-height:32px;font-weight:900;font-size:13px;">
+                        {idx}
+                      </div>
+                    </td>
+                    <td valign="top">
+                      <div style="font-size:15px;line-height:1.42;color:#f8fafc;font-weight:750;">
+                        {esc(item.get("title"))}
+                      </div>
+                      <div style="margin-top:8px;">
+                        <a href="{esc(item.get("link"))}" style="color:#38bdf8;text-decoration:none;font-size:13px;font-weight:800;">
+                          Apri news →
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            """
+    else:
+        news_rows = """
+        <tr>
+          <td style="padding:14px 0;color:#94a3b8;font-size:14px;">
+            Nessuna nuova news scuola rilevata in questo controllo.
+          </td>
+        </tr>
+        """
+
+    comune_block = ""
+
+    if has_comune_update and comune_state:
+        comune_block = f"""
+        <div style="margin-top:22px;background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(249,115,22,.10));border:1px solid rgba(251,191,36,.44);border-radius:24px;padding:24px;">
+          <div style="display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(113,63,18,.85);border:1px solid rgba(251,191,36,.68);color:#fde68a;font-size:12px;font-weight:900;letter-spacing:.08em;">
+            🏛️ COMUNE DI MILANO
+          </div>
+
+          <h2 style="margin:18px 0 10px;color:#f8fafc;font-size:24px;line-height:1.24;letter-spacing:-.02em;">
+            {esc(COMUNE_TITLE)}
+          </h2>
+
+          <p style="margin:0;color:#d6d3d1;font-size:15px;line-height:1.7;">
+            La pagina monitorata è cambiata. Verifica subito eventuali aggiornamenti su iscrizioni, scadenze o avvisi.
+          </p>
+
+          <div style="margin-top:20px;">
+            <a href="{esc(COMUNE_MILANO_URL)}" style="display:inline-block;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1c1917;text-decoration:none;padding:14px 18px;border-radius:14px;font-weight:900;font-size:14px;">
+              Apri pagina Comune →
+            </a>
+          </div>
+        </div>
+        """
+
+    return f"""
+    <!doctype html>
+    <html>
+      <body style="margin:0;padding:0;background:#020617;font-family:Arial,Helvetica,sans-serif;color:#f8fafc;">
+        <div style="padding:36px 14px;background:
+          radial-gradient(circle at 12% 0%,rgba(20,184,166,.24),transparent 30%),
+          radial-gradient(circle at 92% 6%,rgba(56,189,248,.18),transparent 30%),
+          radial-gradient(circle at 50% 100%,rgba(74,222,128,.10),transparent 34%),
+          #020617;">
+
+          <div style="max-width:760px;margin:0 auto;border-radius:30px;overflow:hidden;border:1px solid rgba(148,163,184,.22);box-shadow:0 32px 90px rgba(0,0,0,.42);background:rgba(15,23,42,.94);">
+
+            <div style="padding:30px 30px 26px;background:
+              linear-gradient(135deg,rgba(15,118,110,.28),rgba(15,23,42,.0)),
+              rgba(15,23,42,.96);border-bottom:1px solid rgba(148,163,184,.14);">
+
+              <div style="display:inline-block;padding:9px 14px;border-radius:999px;background:rgba(6,78,59,.76);border:1px solid rgba(74,222,128,.52);color:#bbf7d0;font-size:12px;font-weight:900;letter-spacing:.08em;">
+                ● MONITOR ATTIVO
+              </div>
+
+              <h1 style="margin:22px 0 8px;color:#f8fafc;font-size:36px;line-height:1.04;letter-spacing:-.05em;">
+                Monitor Scuola<br>
+                <span style="color:#67e8f9;">I.C.S. Moisè Loria</span>
+              </h1>
+
+              <p style="margin:0;color:#cbd5e1;font-size:16px;line-height:1.6;">
+                Circolari, news scolastiche e aggiornamenti dal Comune di Milano.
+              </p>
+
+              <div style="margin-top:18px;color:#94a3b8;font-size:13px;">
+                Ultimo controllo: <strong style="color:#e2e8f0;">{esc(now_label)}</strong>
+              </div>
+            </div>
+
+            <div style="padding:22px 22px 8px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  {build_stat_badge("Circolari", "1" if has_circular else "0")}
+                  {build_stat_badge("News", str(len(new_news)))}
+                  {build_stat_badge("Comune", "1" if has_comune_update else "0")}
+                </tr>
+              </table>
+
+              {circular_block}
+              {comune_block}
+
+              <div style="margin-top:22px;background:rgba(15,23,42,.76);border:1px solid rgba(148,163,184,.18);border-radius:24px;padding:24px;">
+                <div style="display:inline-block;padding:8px 13px;border-radius:999px;background:rgba(8,47,73,.8);border:1px solid rgba(56,189,248,.46);color:#bae6fd;font-size:12px;font-weight:900;letter-spacing:.08em;">
+                  📰 NEWS SCUOLA
+                </div>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;">
+                  {news_rows}
+                </table>
+              </div>
+
+              <div style="margin:28px 0 22px;text-align:center;">
+                <a href="{esc(DASHBOARD_URL)}" style="display:inline-block;background:linear-gradient(135deg,#22c55e,#38bdf8);color:#020617;text-decoration:none;padding:15px 22px;border-radius:16px;font-weight:900;font-size:15px;">
+                  Apri dashboard →
+                </a>
+              </div>
+
+              <p style="margin:0 0 24px;color:#64748b;font-size:12px;text-align:center;line-height:1.5;">
+                Aggiornamento generato automaticamente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+    """
 
 
 def send_email(has_circular, circular, new_news, has_comune_update, comune_state):
@@ -941,14 +727,13 @@ def send_email(has_circular, circular, new_news, has_comune_update, comune_state
         print("RESEND_API_KEY mancante: salto invio email.")
         return
 
-    if not EMAIL_TO:
-        print("EMAIL_TO mancante: salto invio email.")
-        return
+    base_recipients = EMAIL_TO.split(",") if EMAIL_TO else []
+    extra_recipients = EMAIL_EXTRA_TO.split(",") if EMAIL_EXTRA_TO else []
 
-    recipients = [email.strip() for email in EMAIL_TO.split(",") if email.strip()]
+    recipients = unique_list(base_recipients + extra_recipients)
 
     if not recipients:
-        print("EMAIL_TO valorizzato ma nessun destinatario valido: salto invio email.")
+        print("Nessun destinatario email valido: salto invio email.")
         return
 
     payload = {
@@ -960,7 +745,7 @@ def send_email(has_circular, circular, new_news, has_comune_update, comune_state
 
     print("Invio email Resend...")
     print(f"Mittente email: {RESEND_FROM}")
-    print(f"Destinatari email: {recipients}")
+    print(f"Numero destinatari email: {len(recipients)}")
 
     try:
         response = resend.Emails.send(payload)
@@ -980,10 +765,9 @@ def main():
     print("TELEGRAM_CHAT_ID presente:", bool(TELEGRAM_CHAT_ID))
     print("RESEND_API_KEY presente:", bool(RESEND_API_KEY))
     print("EMAIL_TO presente:", bool(EMAIL_TO))
+    print("EMAIL_EXTRA_TO presente:", bool(EMAIL_EXTRA_TO))
     print("IFTTT_KEY presente:", bool(IFTTT_KEY))
     print("RESEND_FROM:", RESEND_FROM)
-    print("LOGO_FILE:", LOGO_FILE)
-    print("LOGO_FILE exists:", os.path.exists(LOGO_FILE))
 
     circular = extract_latest_circular()
     news = extract_news()
@@ -1050,11 +834,7 @@ def main():
     has_any_update = has_school_update or has_comune_update
 
     if has_any_update:
-        if has_school_update:
-            image_path = generate_card(circular, new_news)
-            send_telegram_photo(image_path)
-
-        summary = build_summary_message(
+        telegram_message = build_telegram_message(
             has_new_circular,
             circular,
             new_news,
@@ -1063,7 +843,7 @@ def main():
         )
 
         send_telegram_text(
-            summary,
+            telegram_message,
             telegram_buttons(has_new_circular, has_comune_update),
         )
 
@@ -1075,23 +855,32 @@ def main():
             comune_state,
         )
 
-        whatsapp_title = "🚀 Aggiornamento monitor scuola"
+        whatsapp_title = build_whatsapp_title(
+            has_new_circular,
+            new_news,
+            has_comune_update,
+        )
+
         whatsapp_message = build_whatsapp_message(
             has_new_circular,
             circular,
             new_news,
             has_comune_update,
         )
-        whatsapp_url = COMUNE_MILANO_URL if has_comune_update else DASHBOARD_URL
 
-        # Canale opzionale: non deve mai bloccare il monitor.
+        whatsapp_url = build_whatsapp_url(
+            has_new_circular,
+            circular,
+            has_comune_update,
+        )
+
         send_ifttt_whatsapp(
             whatsapp_title,
             whatsapp_message,
             whatsapp_url,
         )
 
-        print("Aggiornamento Telegram + Email + WhatsApp opzionale completato.")
+        print("Aggiornamento Telegram testo + Email wow + WhatsApp opzionale completato.")
     else:
         print("Nessun aggiornamento da notificare.")
 
