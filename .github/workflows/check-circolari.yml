@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install requests beautifulsoup4 pillow resend
+          pip install requests beautifulsoup4 resend
 
       - name: Run monitor
         run: python check_circolari.py
@@ -36,6 +36,7 @@ jobs:
           DASHBOARD_URL: https://adelisa-srg.github.io/circolari-loria-monitor/
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_EXTRA_TO: tittytraversa@libero.it
           IFTTT_KEY: ${{ secrets.IFTTT_KEY }}
 
       - name: Commit updated state and dashboard
