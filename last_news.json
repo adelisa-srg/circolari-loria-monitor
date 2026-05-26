@@ -1,5 +1,21 @@
 [
   {
+    "id": "https://www.icsmoiseloria.edu.it/pagine/saggio-del-coro-della-carlo-porta",
+    "type": "news",
+    "title": "Saggio del CORO della Carlo Porta",
+    "date": "",
+    "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-del-coro-della-carlo-porta",
+    "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+  },
+  {
+    "id": "https://www.icsmoiseloria.edu.it/pagine/saggio-delle-classi-terze---secondaria-carlo-porta",
+    "type": "news",
+    "title": "Saggio delle classi terze - Secondaria Carlo Porta",
+    "date": "",
+    "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-delle-classi-terze---secondaria-carlo-porta",
+    "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+  },
+  {
     "id": "https://www.icsmoiseloria.edu.it/pagine/incontro-orientamento-per-genitori",
     "type": "news",
     "title": "Incontro di Orientamento per genitori",
@@ -56,27 +72,11 @@
     "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
   },
   {
-    "id": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata--",
+    "id": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata--8",
     "type": "news",
     "title": "Carlo Porta Web Radio - Nuova puntata!",
     "date": "",
-    "link": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata--",
-    "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-  },
-  {
-    "id": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata--7",
-    "type": "news",
-    "title": "Carlo Porta Web Radio - Nuova puntata!",
-    "date": "",
-    "link": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata--7",
-    "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-  },
-  {
-    "id": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata-2",
-    "type": "news",
-    "title": "Carlo Porta Web Radio - Nuova puntata!",
-    "date": "",
-    "link": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata-2",
+    "link": "https://www.icsmoiseloria.edu.it/pagine/carlo-porta-web-radio---nuova-puntata--8",
     "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
   }
 ]
