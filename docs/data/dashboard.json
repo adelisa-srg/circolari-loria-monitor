@@ -1,5 +1,5 @@
 {
-  "last_update": "2026-06-09T17:51:10.303625+00:00",
+  "last_update": "2026-06-10T08:41:48.600732+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
@@ -15,6 +15,30 @@
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/laboratorio-psicomotorio---primaria",
+      "type": "news",
+      "title": "Laboratorio psicomotorio - Primaria",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/laboratorio-psicomotorio---primaria",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/edizione-straordinaria-le-religioni-vie-per-la-pace-cronaca-di-un-percorso-di-connessione-autentica---classi-5a-e-5b---primaria-foppette",
+      "type": "news",
+      "title": "\"Edizione Straordinaria: Le religioni, vie per la pace\". Cronaca di un percorso di connessione autentica - Classi 5^A e 5^B - Primaria Foppette",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/edizione-straordinaria-le-religioni-vie-per-la-pace-cronaca-di-un-percorso-di-connessione-autentica---classi-5a-e-5b---primaria-foppette",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/il-mondo-che-vorrei-scoprendo-lagenda-2030--classi-4a-e-4b---primaria-foppette",
+      "type": "news",
+      "title": "\"Il mondo che vorrei: scoprendo l'Agenda 2030\" -Classi 4^A e 4^B - Primaria Foppette",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/il-mondo-che-vorrei-scoprendo-lagenda-2030--classi-4a-e-4b---primaria-foppette",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
     {
       "id": "https://www.icsmoiseloria.edu.it/pagine/orario-estivo-segreteria-didattica",
       "type": "news",
@@ -70,30 +94,6 @@
       "date": "",
       "link": "https://www.icsmoiseloria.edu.it/pagine/progetto-educazione-alla-legalit",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/giornata-sportiva---secondaria-carlo-porta-1",
-      "type": "news",
-      "title": "Giornata Sportiva - Secondaria Carlo Porta",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/giornata-sportiva---secondaria-carlo-porta-1",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/saggio-finale-delle-classi-a-indirizzo-musicale",
-      "type": "news",
-      "title": "Saggio finale delle classi a indirizzo musicale",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-finale-delle-classi-a-indirizzo-musicale",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/io-sono-laltro-agenda-2030---classe-vb---primaria-foppette",
-      "type": "news",
-      "title": "\"Io sono l'altro: agenda 2030\" - classe VB - Primaria Foppette",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/io-sono-laltro-agenda-2030---classe-vb---primaria-foppette",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     }
   ],
   "external_sources": {
@@ -108,7 +108,7 @@
         "title": "Pre-scuola e giochi serali - Scuole primarie",
         "url": "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie",
         "hash": "00844a43e3e822ed9108deb51f539b95fedcd33eccdfe80a5219b300ac0dbe99",
-        "checked_at": "2026-06-09T17:51:10.303256+00:00",
+        "checked_at": "2026-06-10T08:41:48.600411+00:00",
         "preview": "Selezione lingua: lingua selezionata العربية 中文 Français 日本語 Ελληνικά English Italiano Русский Español Deutsch Segnalazioni al Fascicolo del Cittadino Barra di ricerca Nascondi navigazione Servizi Notizie Amministrazione Argomenti Ambiente e Animali Anagrafe Casa Cultura Edilizia Giovani Impresa Lavoro e Formazione Milano accessibile Mobilità Partecipazione civica Patrimonio immobiliare Polizia locale e sicurezza Rigenerazione urbana Scuola Servizi funebri Sport Statistica Tributi Volontariato Welfare Ricerca Barra di ricerca Home / Servizi / Scuola / Pre-scuola e giochi serali scuole primarie Pre-scuola e giochi serali scuole primarie Iscrizione Rivolti alle alunne e agli alunni delle scuol"
       },
       "last_error": null
