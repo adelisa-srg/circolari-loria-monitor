@@ -1,5 +1,5 @@
 {
-  "last_update": "2026-06-18T09:08:01.909680+00:00",
+  "last_update": "2026-06-18T18:19:31.774086+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
@@ -15,6 +15,14 @@
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/compiti-estivi-per-le-future-classi-prime-1",
+      "type": "news",
+      "title": "COMPITI ESTIVI PER LE FUTURE CLASSI PRIME",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/compiti-estivi-per-le-future-classi-prime-1",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
     {
       "id": "https://www.icsmoiseloria.edu.it/pagine/laboratorio-psicomotorio---primaria",
       "type": "news",
@@ -85,14 +93,6 @@
       "title": "Momento musicale al flauto dolce",
       "date": "",
       "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-di-flauto",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/progetto-educazione-alla-legalit",
-      "type": "news",
-      "title": "Progetto \"Educazione alla Legalità\"",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/progetto-educazione-alla-legalit",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     }
   ],
