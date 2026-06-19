@@ -1,5 +1,5 @@
 {
-  "last_update": "2026-06-19T09:23:57.140732+00:00",
+  "last_update": "2026-06-19T17:46:12.045311+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
@@ -102,7 +102,7 @@
       "title": "Pre-scuola e giochi serali - Scuole primarie",
       "status": "error",
       "last_state": null,
-      "last_error": "404 Client Error: Not Found for url: https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie"
+      "last_error": "403 Client Error: Forbidden for url: https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie"
     }
   }
 }
