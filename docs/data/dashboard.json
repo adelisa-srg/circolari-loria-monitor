@@ -1,17 +1,17 @@
 {
-  "last_update": "2026-06-23T08:23:05.460020+00:00",
+  "last_update": "2026-06-23T17:43:53.481332+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
   "circular": {
-    "id": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10489391?download=1",
+    "id": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10777827?download=1",
     "type": "circular",
-    "title": "PRIMARIA ALUNNI Circ.N.44 - Calendario scolastico e prime indicazioni a.s.26-27",
-    "circular_date": "08/06/2026",
-    "published_date": "08/06/2026",
+    "title": "PRIMARIA ALUNNI CIRCOLARE N.45-Prescuola e giochi serali a.s. 2026-27",
+    "circular_date": "23/06/2026",
+    "published_date": "23/06/2026",
     "tipologia": "Tutto il personale, Riservata",
-    "attachment_name": "PRIMARIA Circ_44_Calendario scolastico e prime indicazioni a.s.26-27.pdf",
-    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10489391?download=1",
+    "attachment_name": "PRIMARIA Circ_45_Prescuola e giochi serali a.s. 2026-27.pdf",
+    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10777827?download=1",
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
@@ -100,9 +100,18 @@
     "comune_milano": {
       "url": "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie",
       "title": "Pre-scuola e giochi serali - Scuole primarie",
-      "status": "error",
-      "last_state": null,
-      "last_error": "HTTPSConnectionPool(host='www.comune.milano.it', port=443): Max retries exceeded with url: /servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie (Caused by NameResolutionError(\"HTTPSConnection(host='www.comune.milano.it', port=443): Failed to resolve 'www.comune.milano.it' ([Errno -3] Temporary failure in name resolution)\"))"
+      "status": "ok",
+      "last_state": {
+        "id": "720f79dcdbcd48704b4b292d35e5451f85a40a50ac8f2a7085a6343aee317017",
+        "type": "external_page",
+        "source": "Comune di Milano",
+        "title": "Pre-scuola e giochi serali - Scuole primarie",
+        "url": "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie",
+        "hash": "720f79dcdbcd48704b4b292d35e5451f85a40a50ac8f2a7085a6343aee317017",
+        "checked_at": "2026-06-23T17:43:53.480969+00:00",
+        "preview": "Selezione lingua: lingua selezionata Arabo Cinese (semplificato) Francese Giapponese Greco Inglese Italiano Russo Spagnolo Tedesco Segnalazioni al Fascicolo del Cittadino Barra di ricerca Nascondi navigazione Servizi Notizie Amministrazione Argomenti Ambiente e Animali Anagrafe Casa Cultura Edilizia Giovani Impresa Lavoro e Formazione Milano accessibile Mobilità Partecipazione civica Patrimonio immobiliare Polizia locale e sicurezza Rigenerazione urbana Scuola Servizi funebri Sport Statistica Tributi Volontariato Welfare Ricerca Barra di ricerca Home / Servizi / Scuola / Pre-scuola e giochi serali scuole primarie Possibili rallentamenti nelle iscrizioni A causa di problemi tecnici, l'iscrizi"
+      },
+      "last_error": null
     }
   }
 }
