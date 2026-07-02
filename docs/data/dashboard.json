@@ -1,20 +1,28 @@
 {
-  "last_update": "2026-07-02T07:59:02.478050+00:00",
+  "last_update": "2026-07-02T17:23:48.979696+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
   "circular": {
-    "id": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10777827?download=1",
+    "id": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10844155?download=1",
     "type": "circular",
-    "title": "PRIMARIA ALUNNI CIRCOLARE N.45-Prescuola e giochi serali a.s. 2026-27",
-    "circular_date": "23/06/2026",
-    "published_date": "23/06/2026",
+    "title": "PRIMARIA ALUNNI Circ.N.46 - Spazio studio pomeridiano",
+    "circular_date": "02/07/2026",
+    "published_date": "02/07/2026",
     "tipologia": "Tutto il personale, Riservata",
-    "attachment_name": "PRIMARIA Circ_45_Prescuola e giochi serali a.s. 2026-27.pdf",
-    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10777827?download=1",
+    "attachment_name": "PRIMARIA Circ_46_spazio studio pomeridiano.pdf",
+    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/10844155?download=1",
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/spazio-studio-pomeridiano-per-le-future-classi-prime-della-carlo-porta",
+      "type": "news",
+      "title": "Spazio studio pomeridiano per le future classi prime della Carlo Porta",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/spazio-studio-pomeridiano-per-le-future-classi-prime-della-carlo-porta",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
     {
       "id": "https://www.icsmoiseloria.edu.it/pagine/libri-di-testo-as-2026-2027",
       "type": "news",
@@ -86,14 +94,6 @@
       "date": "",
       "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-del-coro-della-carlo-porta",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/saggio-delle-classi-terze---secondaria-carlo-porta",
-      "type": "news",
-      "title": "Saggio delle classi terze - Secondaria Carlo Porta",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/saggio-delle-classi-terze---secondaria-carlo-porta",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     }
   ],
   "external_sources": {
@@ -108,7 +108,7 @@
         "title": "Pre-scuola e giochi serali - Scuole primarie",
         "url": "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie",
         "hash": "a8d10e7c431317e1d6170a6a06ff9c5eaa14a975ae08569af12bff32a560d280",
-        "checked_at": "2026-07-02T07:59:02.477662+00:00",
+        "checked_at": "2026-07-02T17:23:48.979313+00:00",
         "preview": "Selezione lingua: lingua selezionata Arabo Cinese (semplificato) Francese Giapponese Greco Inglese Italiano Russo Spagnolo Tedesco Segnalazioni al Fascicolo del Cittadino Barra di ricerca Nascondi navigazione Servizi Notizie Amministrazione Argomenti Ambiente e Animali Anagrafe Casa Cultura Edilizia Giovani Impresa Lavoro e Formazione Milano accessibile Mobilità Partecipazione civica Patrimonio immobiliare Polizia locale e sicurezza Rigenerazione urbana Scuola Servizi funebri Spazio pubblico Sport Statistica Tributi Volontariato Welfare Ricerca Barra di ricerca Home / Servizi / Scuola / Pre-scuola e giochi serali scuole primarie Pre-scuola e giochi serali scuole primarie Iscrizione per i res"
       },
       "last_error": null
