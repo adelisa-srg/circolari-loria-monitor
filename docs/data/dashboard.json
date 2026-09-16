@@ -1,5 +1,5 @@
 {
-  "last_update": "2026-09-15T19:19:28.460570+00:00",
+  "last_update": "2026-09-16T09:34:25.387475+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
@@ -15,6 +15,14 @@
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/orari-apertura-segreteria",
+      "type": "news",
+      "title": "Orari apertura segreteria",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/orari-apertura-segreteria",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
     {
       "id": "https://www.icsmoiseloria.edu.it/pagine/vacanza-studio-2026-in-scozia",
       "type": "news",
@@ -86,14 +94,6 @@
       "date": "",
       "link": "https://www.icsmoiseloria.edu.it/pagine/edizione-straordinaria-le-religioni-vie-per-la-pace-cronaca-di-un-percorso-di-connessione-autentica---classi-5a-e-5b---primaria-foppette",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/il-mondo-che-vorrei-scoprendo-lagenda-2030--classi-4a-e-4b---primaria-foppette",
-      "type": "news",
-      "title": "\"Il mondo che vorrei: scoprendo l'Agenda 2030\" -Classi 4^A e 4^B - Primaria Foppette",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/il-mondo-che-vorrei-scoprendo-lagenda-2030--classi-4a-e-4b---primaria-foppette",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     }
   ],
   "external_sources": {
@@ -108,7 +108,7 @@
         "title": "Pre-scuola e giochi serali - Scuole primarie",
         "url": "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie",
         "hash": "6f02e1411bd0558af52b1aeef49255b1f6e31e3252167a409e3f5bd4d9c8a487",
-        "checked_at": "2026-09-15T19:19:28.460194+00:00",
+        "checked_at": "2026-09-16T09:34:25.387130+00:00",
         "preview": "Selezione lingua: lingua selezionata Arabo Cinese (semplificato) Francese Giapponese Greco Inglese Italiano Russo Spagnolo Tedesco Segnalazioni al Fascicolo del Cittadino Barra di ricerca Nascondi navigazione Servizi Notizie Amministrazione Argomenti Ambiente e Animali Anagrafe Casa Cultura Edilizia Giovani Impresa Lavoro e Formazione Milano accessibile Mobilità Partecipazione civica Patrimonio immobiliare Polizia locale e sicurezza Rigenerazione urbana Scuola Servizi funebri Spazio pubblico Sport Statistica Tributi Volontariato Welfare Ricerca Barra di ricerca Home / Servizi / Scuola / Pre-scuola e giochi serali scuole primarie Pre-scuola e giochi serali scuole primarie Iscrizione per i res"
       },
       "last_error": null
