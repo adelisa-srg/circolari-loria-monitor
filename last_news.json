@@ -1,5 +1,13 @@
 [
   {
+    "id": "https://www.icsmoiseloria.edu.it/pagine/la-nostra-scuola--centro-di-preparazione-cambridge-english",
+    "type": "news",
+    "title": "La nostra scuola è Centro di Preparazione Cambridge English!",
+    "date": "",
+    "link": "https://www.icsmoiseloria.edu.it/pagine/la-nostra-scuola--centro-di-preparazione-cambridge-english",
+    "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+  },
+  {
     "id": "https://www.icsmoiseloria.edu.it/pagine/orari-apertura-segreteria",
     "type": "news",
     "title": "Orari apertura segreteria",
@@ -69,14 +77,6 @@
     "title": "Laboratorio psicomotorio - Primaria",
     "date": "",
     "link": "https://www.icsmoiseloria.edu.it/pagine/laboratorio-psicomotorio---primaria",
-    "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-  },
-  {
-    "id": "https://www.icsmoiseloria.edu.it/pagine/edizione-straordinaria-le-religioni-vie-per-la-pace-cronaca-di-un-percorso-di-connessione-autentica---classi-5a-e-5b---primaria-foppette",
-    "type": "news",
-    "title": "\"Edizione Straordinaria: Le religioni, vie per la pace\". Cronaca di un percorso di connessione autentica - Classi 5^A e 5^B - Primaria Foppette",
-    "date": "",
-    "link": "https://www.icsmoiseloria.edu.it/pagine/edizione-straordinaria-le-religioni-vie-per-la-pace-cronaca-di-un-percorso-di-connessione-autentica---classi-5a-e-5b---primaria-foppette",
     "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
   }
 ]
