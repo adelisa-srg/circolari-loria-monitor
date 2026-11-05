@@ -1,20 +1,28 @@
 {
-  "last_update": "2026-11-04T21:35:45.530493+00:00",
+  "last_update": "2026-11-05T12:49:25.704629+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
   "circular": {
-    "id": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/4uunrm8ofo?download=1",
+    "id": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/jh12qghsai?download=1",
     "type": "circular",
-    "title": "PRIMARIA ALUNNI Circ.N.16 - A scuola in bici",
-    "circular_date": "03/11/2026",
-    "published_date": "03/11/2026",
+    "title": "PRIMARIA SECONDARIA ALUNNI Circ.N.13 - Assemblea sindacale lunedì 9 novembre",
+    "circular_date": "05/11/2026",
+    "published_date": "05/11/2026",
     "tipologia": "Tutto il personale, Riservata",
-    "attachment_name": "PRIMARIA Circ_16_A scuola in bici.pdf",
-    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/4uunrm8ofo?download=1",
+    "attachment_name": "PRIMARIA SECONDARIA Circ_13_Assemblea sindacale lunedì 9 novembre.pdf",
+    "link": "https://web.spaggiari.eu/sdg2/Documenti/BachecaCvv/MIME0288/jh12qghsai?download=1",
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/ritiro-attestati-certificazione-delf-as-20252026",
+      "type": "news",
+      "title": "Ritiro attestati - Certificazione Delf A2 a.s. 2025/2026",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/ritiro-attestati-certificazione-delf-as-20252026",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
     {
       "id": "https://www.icsmoiseloria.edu.it/pagine/visita-alla-fondazione-pasquinelli---classi-3a-e-3b---primaria-foppette",
       "type": "news",
@@ -86,14 +94,6 @@
       "date": "",
       "link": "https://www.icsmoiseloria.edu.it/pagine/vacanza-studio-26-this-summer-we-headed-to-bradfield",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/spazio-studio-pomeridiano-per-le-future-classi-prime-della-carlo-porta",
-      "type": "news",
-      "title": "Spazio studio pomeridiano per le future classi prime della Carlo Porta",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/spazio-studio-pomeridiano-per-le-future-classi-prime-della-carlo-porta",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     }
   ],
   "external_sources": {
@@ -102,14 +102,14 @@
       "title": "Pre-scuola e giochi serali - Scuole primarie",
       "status": "ok",
       "last_state": {
-        "id": "1242bbb2e938a6d3b7452c97a532e470342854c057f15bdc2c20566ecb4ef481",
+        "id": "0e4633a19783af1c2b6539d97db34c6ef066c621f864b419cee54a8e90e0dd42",
         "type": "external_page",
         "source": "Comune di Milano",
         "title": "Pre-scuola e giochi serali - Scuole primarie",
         "url": "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie",
-        "hash": "1242bbb2e938a6d3b7452c97a532e470342854c057f15bdc2c20566ecb4ef481",
-        "checked_at": "2026-11-04T21:35:45.530129+00:00",
-        "preview": "Selezione lingua: lingua selezionata Arabo Cinese (semplificato) Francese Giapponese Greco Inglese Italiano Russo Spagnolo Tedesco Segnalazioni al Fascicolo del Cittadino Barra di ricerca Nascondi navigazione Servizi Notizie Amministrazione Argomenti Ambiente e Animali Anagrafe Casa Cultura Edilizia Giovani Impresa Lavoro e Formazione Milano accessibile Mobilità Partecipazione civica Patrimonio immobiliare Polizia locale e sicurezza Rigenerazione urbana Scuola Servizi funebri Spazio pubblico Sport Statistica Tributi Volontariato Welfare Ricerca Barra di ricerca Home / Servizi / Scuola / Pre-scuola e giochi serali scuole primarie Pre-scuola e giochi serali scuole primarie Graduatorie Iscrizio"
+        "hash": "0e4633a19783af1c2b6539d97db34c6ef066c621f864b419cee54a8e90e0dd42",
+        "checked_at": "2026-11-05T12:49:25.704322+00:00",
+        "preview": "Selezione lingua: lingua selezionata Arabo Cinese (semplificato) Francese Giapponese Greco Inglese Italiano Russo Spagnolo Tedesco Segnalazioni al Fascicolo del Cittadino Barra di ricerca Nascondi navigazione Servizi Notizie Amministrazione Argomenti Ambiente e Animali Anagrafe Casa Cultura Edilizia Giovani Impresa Lavoro e Formazione Milano accessibile Mobilità Partecipazione civica Patrimonio immobiliare Polizia locale e sicurezza Rigenerazione urbana Scuola Servizi funebri Spazio pubblico Sport Statistica Tributi Volontariato Welfare Ricerca Barra di ricerca Home / Servizi / Scuola / Pre-scuola e giochi serali scuole primarie Pre-scuola e giochi serali scuole primarie Iscrizione per i res"
       },
       "last_error": null
     }
