@@ -1,5 +1,5 @@
 {
-  "last_update": "2026-11-16T13:12:45.117350+00:00",
+  "last_update": "2026-11-16T23:53:13.147453+00:00",
   "site": "Istituto Comprensivo via Moisè Loria",
   "circulars_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on",
   "news_url": "https://www.icsmoiseloria.edu.it/archivio-news",
@@ -15,6 +15,14 @@
     "source_url": "https://www.icsmoiseloria.edu.it/pvw2/app/default/index.php?cerca=primaria&categoria=0&tipo=comunicati&storico=on"
   },
   "news": [
+    {
+      "id": "https://www.icsmoiseloria.edu.it/pagine/esiti-prove-invalsi-as-2025-2026",
+      "type": "news",
+      "title": "Esiti prove INVALSI a.s. 2025-2026",
+      "date": "",
+      "link": "https://www.icsmoiseloria.edu.it/pagine/esiti-prove-invalsi-as-2025-2026",
+      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
+    },
     {
       "id": "https://www.icsmoiseloria.edu.it/pagine/ritiro-attestati-certificazione-delf-as-20252026",
       "type": "news",
@@ -86,14 +94,6 @@
       "date": "",
       "link": "https://www.icsmoiseloria.edu.it/pagine/vacanza-studio-2026-al-campus-universitario-di--exeter-nel-cuore-del-devon",
       "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
-    },
-    {
-      "id": "https://www.icsmoiseloria.edu.it/pagine/vacanza-studio-26-this-summer-we-headed-to-bradfield",
-      "type": "news",
-      "title": "Vacanza studio 2026: This summer we headed to Bradfield!",
-      "date": "",
-      "link": "https://www.icsmoiseloria.edu.it/pagine/vacanza-studio-26-this-summer-we-headed-to-bradfield",
-      "source_url": "https://www.icsmoiseloria.edu.it/archivio-news"
     }
   ],
   "external_sources": {
@@ -108,7 +108,7 @@
         "title": "Pre-scuola e giochi serali - Scuole primarie",
         "url": "https://www.comune.milano.it/servizi/scuola/pre-scuola-e-giochi-serali-scuole-primarie",
         "hash": "0e4633a19783af1c2b6539d97db34c6ef066c621f864b419cee54a8e90e0dd42",
-        "checked_at": "2026-11-16T13:12:45.117020+00:00",
+        "checked_at": "2026-11-16T23:53:13.147153+00:00",
         "preview": "Selezione lingua: lingua selezionata Arabo Cinese (semplificato) Francese Giapponese Greco Inglese Italiano Russo Spagnolo Tedesco Segnalazioni al Fascicolo del Cittadino Barra di ricerca Nascondi navigazione Servizi Notizie Amministrazione Argomenti Ambiente e Animali Anagrafe Casa Cultura Edilizia Giovani Impresa Lavoro e Formazione Milano accessibile Mobilità Partecipazione civica Patrimonio immobiliare Polizia locale e sicurezza Rigenerazione urbana Scuola Servizi funebri Spazio pubblico Sport Statistica Tributi Volontariato Welfare Ricerca Barra di ricerca Home / Servizi / Scuola / Pre-scuola e giochi serali scuole primarie Pre-scuola e giochi serali scuole primarie Iscrizione per i res"
       },
       "last_error": null
